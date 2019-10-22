@@ -110,3 +110,17 @@ func (m *Machine) Step() (bool, error) {
 
 	return false, nil
 }
+
+func (m *Machine) Run() error {
+	for {
+		done, err := m.Step()
+
+		if err != nil {
+			return err
+		}
+
+		if done {
+			return nil
+		}
+	}
+}
