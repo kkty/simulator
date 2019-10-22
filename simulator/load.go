@@ -70,6 +70,7 @@ func parseInstruction(fields []string) (Instruction, error) {
 		fallthrough
 	case "out":
 		operands = append(operands, fields[1])
+	case "exit":
 	default:
 		return Instruction{}, fmt.Errorf("%v: invalid opcode", opcode)
 	}
