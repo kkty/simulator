@@ -79,7 +79,6 @@ func (m *Machine) Step() (bool, error) {
 		m.ProgramCounter++
 	case "lwc1":
 		m.FloatRegisters[i.Operands[0].(string)] = m.Memory[i.Operands[1].(int)+m.IntRegisters[i.Operands[2].(string)]].Value.(float32)
-		m.FloatRegisters[i.Operands[0].(string)] = m.FloatRegisters[i.Operands[1].(string)] * m.FloatRegisters[i.Operands[2].(string)]
 		m.ProgramCounter++
 	case "sw":
 		m.Memory[i.Operands[1].(int)+m.IntRegisters[i.Operands[2].(string)]].Value = m.IntRegisters[i.Operands[0].(string)]
