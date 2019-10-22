@@ -10,33 +10,37 @@ import (
 	"strings"
 )
 
-const ra = "$ra"
-const sp = "$sp"
-const hp = "$hp"
-
 type Label string
 
+type ValueWithLabel struct {
+	Label Label
+	Value interface{}
+}
+
+type Instruction struct {
+	Opcode   string
+	Operands []interface{}
+}
+
+// Machine is an abstraction of physical machines.
 type Machine struct {
-	IntRegisters   map[string]int
-	FloatRegisters map[string]float32
-	Memory         []struct {
-		Label Label
-		Value interface{}
-	}
+	IntRegisters      map[string]int
+	FloatRegisters    map[string]float32
+	Memory            []ValueWithLabel
 	ProgramCounter    int
 	ConditionRegister bool
 }
 
-func NewMachine() Machine {
+// NewMachine creates a Machine instance with memory of the specified size.
+func NewMachine(initialMemorySize int) Machine {
 	return Machine{
 		IntRegisters:   make(map[string]int),
 		FloatRegisters: make(map[string]float32),
+		Memory:         make([]ValueWithLabel, initialMemorySize),
 	}
 }
 
-var ErrUndefinedLabel = errors.New("undefined label")
-var ErrUndefinedOpcode = errors.New("undefined opcode")
-
+// FindAddress iterates through the memory and returns the label's matching address.
 func (m *Machine) FindAddress(label Label) (int, error) {
 	for i, d := range m.Memory {
 		if d.Label == label {
@@ -44,13 +48,15 @@ func (m *Machine) FindAddress(label Label) (int, error) {
 		}
 	}
 
-	return 0, fmt.Errorf("%v: %w", label, ErrUndefinedLabel)
+	return 0, fmt.Errorf("%v: undefined label", label)
 }
 
-func (m *Machine) Step() error {
+// Step fetches an instruction and executes it.
+// Returns true if it has encountered "exit" call.
+func (m *Machine) Step() (bool, error) {
 	i := m.Memory[m.ProgramCounter].Value.(Instruction)
 
-	switch i.Opcode {
+	switch opcode := i.Opcode; opcode {
 	case "add":
 		m.IntRegisters[i.Operands[0].(string)] = m.IntRegisters[i.Operands[1].(string)] + m.IntRegisters[i.Operands[2].(string)]
 		m.ProgramCounter++
@@ -85,7 +91,7 @@ func (m *Machine) Step() error {
 	case "j":
 		m.ProgramCounter = i.Operands[0].(int)
 	case "jal":
-		m.IntRegisters[ra] = m.ProgramCounter + 1
+		m.IntRegisters["$ra"] = m.ProgramCounter + 1
 		m.ProgramCounter = i.Operands[0].(int)
 	case "jr":
 		m.ProgramCounter = m.IntRegisters[i.Operands[0].(string)]
@@ -95,7 +101,7 @@ func (m *Machine) Step() error {
 		} else {
 			m.ProgramCounter++
 		}
-	case "ceqs":
+	case "c.eq.s":
 		if m.FloatRegisters[i.Operands[0].(string)] == m.FloatRegisters[i.Operands[1].(string)] {
 			m.ConditionRegister = true
 		} else {
@@ -103,7 +109,7 @@ func (m *Machine) Step() error {
 		}
 
 		m.ProgramCounter++
-	case "cles":
+	case "c.le.s":
 		if m.FloatRegisters[i.Operands[0].(string)] <= m.FloatRegisters[i.Operands[1].(string)] {
 			m.ConditionRegister = true
 		} else {
@@ -117,7 +123,6 @@ func (m *Machine) Step() error {
 		} else {
 			m.ProgramCounter++
 		}
-
 	case "lw":
 		m.IntRegisters[i.Operands[0].(string)] = m.Memory[i.Operands[1].(int)+m.IntRegisters[i.Operands[2].(string)]].Value.(int)
 		m.ProgramCounter++
@@ -131,7 +136,6 @@ func (m *Machine) Step() error {
 	case "swc1":
 		m.Memory[i.Operands[1].(int)+m.IntRegisters[i.Operands[2].(string)]].Value = m.FloatRegisters[i.Operands[0].(string)]
 		m.ProgramCounter++
-
 	case "add.s":
 		m.FloatRegisters[i.Operands[0].(string)] = m.FloatRegisters[i.Operands[1].(string)] + m.FloatRegisters[i.Operands[2].(string)]
 		m.ProgramCounter++
@@ -147,30 +151,26 @@ func (m *Machine) Step() error {
 	case "out":
 		fmt.Println(m.IntRegisters[i.Operands[0].(string)])
 		m.ProgramCounter++
-
+	case "exit":
+		return true, nil
 	default:
-		log.Fatal()
+		return false, fmt.Errorf("%v: invalid opcode", opcode)
 	}
 
-	return nil
-}
-
-type Instruction struct {
-	Opcode   string
-	Operands []interface{}
-}
-
-func immediateOrLabel(s string) interface{} {
-	i, err := strconv.Atoi(s)
-
-	if err != nil {
-		return Label(s)
-	}
-
-	return i
+	return false, nil
 }
 
 func parseInstruction(fields []string) (Instruction, error) {
+	immediateOrLabel := func(s string) interface{} {
+		i, err := strconv.Atoi(s)
+
+		if err != nil {
+			return Label(s)
+		}
+
+		return i
+	}
+
 	opcode := fields[0]
 	var operands []interface{}
 
@@ -224,7 +224,7 @@ func parseInstruction(fields []string) (Instruction, error) {
 	case "out":
 		operands = append(operands, fields[1])
 	default:
-		return Instruction{}, ErrUndefinedOpcode
+		return Instruction{}, fmt.Errorf("%v: invalid opcode", opcode)
 	}
 
 	return Instruction{
@@ -233,11 +233,37 @@ func parseInstruction(fields []string) (Instruction, error) {
 	}, nil
 }
 
+func parseData(fields []string) (ValueWithLabel, error) {
+	if len(fields) != 3 {
+		return ValueWithLabel{}, errors.New("invalid syntax")
+	}
+
+	switch t := fields[1]; t {
+	case ".float":
+		f, err := strconv.ParseFloat(fields[2], 32)
+
+		if err != nil {
+			return ValueWithLabel{}, err
+		}
+
+		return ValueWithLabel{
+			Label(strings.TrimSuffix(fields[0], ":")),
+			f,
+		}, nil
+	default:
+		return ValueWithLabel{}, errors.New("invalid data type")
+	}
+}
+
+// Load loads a program onto the memory.
 func (m *Machine) Load(program string) error {
+	// The default section is "text".
 	section := "text"
+
 	var nextLabel Label
 
 	for _, line := range strings.Split(program, "\n") {
+		// Replaces "(", ")" or "," with whitespaces.
 		for _, c := range []string{"(", ")", ","} {
 			line = strings.ReplaceAll(line, c, " ")
 		}
@@ -248,6 +274,11 @@ func (m *Machine) Load(program string) error {
 			continue
 		}
 
+		wrapError := func(err error) error {
+			return fmt.Errorf("parse %v: %w", fields, err)
+		}
+
+		// Changes section.
 		if strings.HasPrefix(fields[0], ".") {
 			section = strings.TrimPrefix(fields[0], ".")
 			continue
@@ -255,23 +286,13 @@ func (m *Machine) Load(program string) error {
 
 		switch section {
 		case "data":
-			if len(fields) != 3 {
-				log.Fatal("parse error")
+			valueWithLabel, err := parseData(fields)
+
+			if err != nil {
+				return wrapError(err)
 			}
 
-			switch fields[1] {
-			case ".float":
-				f, err := strconv.ParseFloat(fields[2], 32)
-				if err != nil {
-					log.Fatal("invalid data")
-				}
-				m.Memory = append(m.Memory, struct {
-					Label Label
-					Value interface{}
-				}{Label(strings.TrimSuffix(fields[0], ":")), f})
-			default:
-				log.Fatal("invalid data type")
-			}
+			m.Memory = append(m.Memory, valueWithLabel)
 		case "text":
 			if strings.HasSuffix(fields[0], ":") {
 				nextLabel = Label(strings.TrimSuffix(fields[0], ":"))
@@ -281,21 +302,18 @@ func (m *Machine) Load(program string) error {
 			instruction, err := parseInstruction(fields)
 
 			if err != nil {
-				return err
+				return wrapError(err)
 			}
 
-			m.Memory = append(m.Memory, struct {
-				Label Label
-				Value interface{}
-			}{nextLabel, instruction})
+			m.Memory = append(m.Memory, ValueWithLabel{nextLabel, instruction})
 
 			nextLabel = ""
 		default:
-			log.Fatal("invalid section")
+			return wrapError(fmt.Errorf("%v: invalid section", section))
 		}
 	}
 
-	// Replaces labels with address values.
+	// Iterates thorough the memory and replaces labels with address values.
 	for i := 0; i < len(m.Memory); i++ {
 		if instruction, ok := m.Memory[i].Value.(Instruction); ok {
 			for j := 0; j < len(instruction.Operands); j++ {
@@ -313,34 +331,21 @@ func (m *Machine) Load(program string) error {
 	return nil
 }
 
-func (m *Machine) AllocateMemory(heapSize, stackSize int) {
-	m.IntRegisters[hp] = len(m.Memory)
-	for i := 0; i < heapSize; i++ {
-		m.Memory = append(m.Memory, struct {
-			Label Label
-			Value interface{}
-		}{})
-	}
-	m.IntRegisters[sp] = len(m.Memory)
-	for i := 0; i < heapSize; i++ {
-		m.Memory = append(m.Memory, struct {
-			Label Label
-			Value interface{}
-		}{})
-	}
-}
-
 func main() {
 	b, err := ioutil.ReadFile(os.Args[1])
+
 	if err != nil {
 		log.Fatal(err)
 	}
-	m := NewMachine()
+
+	m := NewMachine(1000)
+
 	if err := m.Load(string(b)); err != nil {
 		log.Fatal(err)
 	}
-	m.AllocateMemory(1000, 1000)
+
 	m.ProgramCounter, err = m.FindAddress("min_caml_start")
+
 	if err != nil {
 		log.Fatal(err)
 	}
