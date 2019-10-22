@@ -96,7 +96,7 @@ func parseData(fields []string) (ValueWithLabel, error) {
 
 		return ValueWithLabel{
 			Label(strings.TrimSuffix(fields[0], ":")),
-			f,
+			float32(f),
 		}, nil
 	default:
 		return ValueWithLabel{}, errors.New("invalid data type")
