@@ -2,6 +2,11 @@ package simulator
 
 import "fmt"
 
+const zeroRegisterName = "$zero"
+const raRegisterName = "$ra"
+const spRegisterName = "$sp"
+const hpRegisterName = "$hp"
+
 type Label string
 
 type ValueWithLabel struct {
@@ -18,20 +23,24 @@ type Instruction struct {
 type Machine struct {
 	IntRegisters      map[string]int
 	FloatRegisters    map[string]float32
-	Memory            []ValueWithLabel
+	Memory            map[int]ValueWithLabel
 	ProgramCounter    int
 	ConditionRegister bool
 	findAddressCache  map[Label]int
 }
 
 // NewMachine creates a Machine instance with memory of the specified size.
-func NewMachine(initialMemorySize int) Machine {
+func NewMachine(entrypoint string) Machine {
 	return Machine{
 		IntRegisters:     make(map[string]int),
 		FloatRegisters:   make(map[string]float32),
-		Memory:           make([]ValueWithLabel, initialMemorySize),
+		Memory:           make(map[int]ValueWithLabel),
 		findAddressCache: make(map[Label]int),
 	}
+}
+
+func (m *Machine) setValueToMemory(address int, value interface{}) {
+	m.Memory[address] = ValueWithLabel{m.Memory[address].Label, value}
 }
 
 // FindAddress iterates through the memory and returns the label's matching address.

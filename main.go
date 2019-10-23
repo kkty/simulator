@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"io/ioutil"
 	"log"
 	"os"
@@ -9,23 +10,31 @@ import (
 )
 
 func main() {
-	b, err := ioutil.ReadFile(os.Args[1])
+	entrypoint := flag.String("entrypoint", "", "label name of the entrypoint")
+	fileName := flag.String("file", "", "path to the assembly file")
+	debug := flag.Bool("debug", false, "write debug log to stderr")
+	flag.Parse()
+
+	if *entrypoint == "" || *fileName == "" {
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	b, err := ioutil.ReadFile(*fileName)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	m := simulator.NewMachine(1000)
+	m := simulator.NewMachine(*entrypoint)
 
 	if err := m.Load(string(b)); err != nil {
 		log.Fatal(err)
 	}
 
-	m.ProgramCounter, err = m.FindAddress("min_caml_start")
+	m.ProgramCounter, err = m.FindAddress(simulator.Label(*entrypoint))
 
-	if err != nil {
+	if err := m.Run(*debug); err != nil {
 		log.Fatal(err)
 	}
-
-	m.Run()
 }

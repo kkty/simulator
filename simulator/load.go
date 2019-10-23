@@ -68,6 +68,8 @@ func parseInstruction(fields []string) (Instruction, error) {
 		operands = append(operands, immediateOrLabel(fields[1]))
 	case "jr":
 		fallthrough
+	case "jalr":
+		fallthrough
 	case "out":
 		operands = append(operands, fields[1])
 	case "exit":
@@ -134,13 +136,13 @@ func (m *Machine) Load(program string) error {
 
 		switch section {
 		case "data":
-			valueWithLabel, err := parseData(fields)
+			var err error
+
+			m.Memory[len(m.Memory)], err = parseData(fields)
 
 			if err != nil {
 				return wrapError(err)
 			}
-
-			m.Memory = append(m.Memory, valueWithLabel)
 		case "text":
 			if strings.HasSuffix(fields[0], ":") {
 				nextLabel = Label(strings.TrimSuffix(fields[0], ":"))
@@ -153,7 +155,7 @@ func (m *Machine) Load(program string) error {
 				return wrapError(err)
 			}
 
-			m.Memory = append(m.Memory, ValueWithLabel{nextLabel, instruction})
+			m.Memory[len(m.Memory)] = ValueWithLabel{nextLabel, instruction}
 
 			nextLabel = ""
 		default:

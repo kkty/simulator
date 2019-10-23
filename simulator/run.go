@@ -1,11 +1,25 @@
 package simulator
 
-import "fmt"
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+)
 
 // Step fetches an instruction and executes it.
 // Returns true if it has encountered "exit" call.
 func (m *Machine) Step() (bool, error) {
-	i := m.Memory[m.ProgramCounter].Value.(Instruction)
+	i, ok := m.Memory[m.ProgramCounter].Value.(Instruction)
+
+	if !ok {
+		return false, errors.New("no instruction on memory")
+	}
+
+	defer func() {
+		// The zero register should always be zero.
+		m.IntRegisters[zeroRegisterName] = 0
+	}()
 
 	switch opcode := i.Opcode; opcode {
 	case "add":
@@ -42,9 +56,12 @@ func (m *Machine) Step() (bool, error) {
 	case "j":
 		m.ProgramCounter = i.Operands[0].(int)
 	case "jal":
-		m.IntRegisters["$ra"] = m.ProgramCounter + 1
+		m.IntRegisters[raRegisterName] = m.ProgramCounter + 1
 		m.ProgramCounter = i.Operands[0].(int)
 	case "jr":
+		m.ProgramCounter = m.IntRegisters[i.Operands[0].(string)]
+	case "jalr":
+		m.IntRegisters[raRegisterName] = m.ProgramCounter + 1
 		m.ProgramCounter = m.IntRegisters[i.Operands[0].(string)]
 	case "beq":
 		if m.IntRegisters[i.Operands[0].(string)] == m.IntRegisters[i.Operands[1].(string)] {
@@ -70,7 +87,7 @@ func (m *Machine) Step() (bool, error) {
 		m.ProgramCounter++
 	case "bc1t":
 		if m.ConditionRegister {
-			m.ProgramCounter += 1 + i.Operands[1].(int)
+			m.ProgramCounter += 1 + i.Operands[0].(int)
 		} else {
 			m.ProgramCounter++
 		}
@@ -81,10 +98,10 @@ func (m *Machine) Step() (bool, error) {
 		m.FloatRegisters[i.Operands[0].(string)] = m.Memory[i.Operands[1].(int)+m.IntRegisters[i.Operands[2].(string)]].Value.(float32)
 		m.ProgramCounter++
 	case "sw":
-		m.Memory[i.Operands[1].(int)+m.IntRegisters[i.Operands[2].(string)]].Value = m.IntRegisters[i.Operands[0].(string)]
+		m.setValueToMemory(i.Operands[1].(int)+m.IntRegisters[i.Operands[2].(string)], m.IntRegisters[i.Operands[0].(string)])
 		m.ProgramCounter++
 	case "swc1":
-		m.Memory[i.Operands[1].(int)+m.IntRegisters[i.Operands[2].(string)]].Value = m.FloatRegisters[i.Operands[0].(string)]
+		m.setValueToMemory(i.Operands[1].(int)+m.IntRegisters[i.Operands[2].(string)], m.FloatRegisters[i.Operands[0].(string)])
 		m.ProgramCounter++
 	case "add.s":
 		m.FloatRegisters[i.Operands[0].(string)] = m.FloatRegisters[i.Operands[1].(string)] + m.FloatRegisters[i.Operands[2].(string)]
@@ -99,7 +116,7 @@ func (m *Machine) Step() (bool, error) {
 		m.FloatRegisters[i.Operands[0].(string)] = m.FloatRegisters[i.Operands[1].(string)] / m.FloatRegisters[i.Operands[2].(string)]
 		m.ProgramCounter++
 	case "out":
-		fmt.Println(m.IntRegisters[i.Operands[0].(string)])
+		fmt.Print(m.IntRegisters[i.Operands[0].(string)])
 		m.ProgramCounter++
 	case "exit":
 		return true, nil
@@ -110,8 +127,23 @@ func (m *Machine) Step() (bool, error) {
 	return false, nil
 }
 
-func (m *Machine) Run() error {
+func (m *Machine) Run(debug bool) error {
 	for {
+		if debug {
+			b, err := json.Marshal(map[string]interface{}{
+				"programCounter": m.ProgramCounter,
+				"intRegisters":   m.IntRegisters,
+				"floatRegisters": m.FloatRegisters,
+				"instruction":    m.Memory[m.ProgramCounter],
+			})
+
+			if err != nil {
+				return err
+			}
+
+			fmt.Fprintf(os.Stderr, "%s\n", string(b))
+		}
+
 		done, err := m.Step()
 
 		if err != nil {
