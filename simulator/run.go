@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 )
 
 // Step fetches an instruction and executes it.
@@ -128,8 +129,37 @@ func (m *Machine) Step() (bool, error) {
 }
 
 func (m *Machine) Run(debug bool) error {
+	if debug {
+		// Prints the initial memory state.
+
+		memory := []struct {
+			Address int
+			Value   interface{}
+			Label   Label
+		}{}
+
+		for address, valueWithLabel := range m.Memory {
+			memory = append(memory, struct {
+				Address int
+				Value   interface{}
+				Label   Label
+			}{address, valueWithLabel.Value, valueWithLabel.Label})
+		}
+
+		sort.Slice(memory, func(i, j int) bool { return memory[i].Address < memory[j].Address })
+
+		b, err := json.Marshal(memory)
+
+		if err != nil {
+			return err
+		}
+
+		fmt.Fprintf(os.Stderr, "%s\n", string(b))
+	}
+
 	for {
 		if debug {
+			// Prints the current machine state.
 			b, err := json.Marshal(map[string]interface{}{
 				"programCounter": m.ProgramCounter,
 				"intRegisters":   m.IntRegisters,
