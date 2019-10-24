@@ -14,6 +14,9 @@ type ValueWithLabel struct {
 	Value interface{}
 }
 
+// Instruction is an abstraction of real instructions that can be
+// executed on machines. Operands can be string, int, float32 or Label
+// depending on the Opcode.
 type Instruction struct {
 	Opcode   string
 	Operands []interface{}
@@ -29,7 +32,7 @@ type Machine struct {
 	findAddressCache  map[Label]int
 }
 
-// NewMachine creates a Machine instance with memory of the specified size.
+// NewMachine creates a Machine instance with empty registers/memory.
 func NewMachine(entrypoint string) Machine {
 	return Machine{
 		IntRegisters:     make(map[string]int),
@@ -39,6 +42,7 @@ func NewMachine(entrypoint string) Machine {
 	}
 }
 
+// setValueToMemory sets a value to the memory without modifying label values.
 func (m *Machine) setValueToMemory(address int, value interface{}) {
 	m.Memory[address] = ValueWithLabel{m.Memory[address].Label, value}
 }
