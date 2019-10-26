@@ -34,7 +34,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	m := simulator.NewMachine(entrypoint)
+	m := simulator.NewMachine()
 
 	if err := m.Load(string(b)); err != nil {
 		log.Fatal(err)

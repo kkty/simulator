@@ -33,7 +33,7 @@ type Machine struct {
 }
 
 // NewMachine creates a Machine instance with empty registers/memory.
-func NewMachine(entrypoint string) Machine {
+func NewMachine() Machine {
 	return Machine{
 		IntRegisters:     make(map[string]int),
 		FloatRegisters:   make(map[string]float32),

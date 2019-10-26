@@ -7,12 +7,10 @@ import (
 )
 
 func TestFindAddress(t *testing.T) {
-	m := Machine{
-		Memory: []ValueWithLabel{
-			{Label: ""},
-			{Label: "l1"},
-			{Label: "l2"},
-		},
+	m := NewMachine()
+	m.Memory = map[int]ValueWithLabel{
+		1: ValueWithLabel{Label("l1"), 10},
+		2: ValueWithLabel{Label("l2"), 20},
 	}
 
 	for _, c := range []struct {
