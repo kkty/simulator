@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -10,29 +11,36 @@ import (
 )
 
 func main() {
-	entrypoint := flag.String("entrypoint", "", "label name of the entrypoint")
-	fileName := flag.String("file", "", "path to the assembly file")
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: simulator [OPTIONS] FILENAME ENTRYPOINT\n")
+		flag.PrintDefaults()
+	}
+
 	debug := flag.Bool("debug", false, "write debug log to stderr")
+
 	flag.Parse()
 
-	if *entrypoint == "" || *fileName == "" {
+	fileName := flag.Arg(0)
+	entrypoint := flag.Arg(1)
+
+	if entrypoint == "" || fileName == "" {
 		flag.Usage()
 		os.Exit(1)
 	}
 
-	b, err := ioutil.ReadFile(*fileName)
+	b, err := ioutil.ReadFile(fileName)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	m := simulator.NewMachine(*entrypoint)
+	m := simulator.NewMachine(entrypoint)
 
 	if err := m.Load(string(b)); err != nil {
 		log.Fatal(err)
 	}
 
-	m.ProgramCounter, err = m.FindAddress(simulator.Label(*entrypoint))
+	m.ProgramCounter, err = m.FindAddress(simulator.Label(entrypoint))
 
 	if err := m.Run(*debug); err != nil {
 		log.Fatal(err)
