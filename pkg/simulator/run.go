@@ -119,6 +119,8 @@ func (m *Machine) Step() (bool, error) {
 	case "out":
 		fmt.Print(m.IntRegisters[i.Operands[0].(string)])
 		m.ProgramCounter++
+	case "nop":
+		m.ProgramCounter++
 	case "exit":
 		return true, nil
 	default:
