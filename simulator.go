@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/kkty/simulator/simulator"
+	"github.com/kkty/simulator/pkg/simulator"
 )
 
 func main() {
@@ -41,6 +41,10 @@ func main() {
 	}
 
 	m.ProgramCounter, err = m.FindAddress(simulator.Label(entrypoint))
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	if err := m.Run(*debug); err != nil {
 		log.Fatal(err)
