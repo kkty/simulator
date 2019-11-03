@@ -8,14 +8,14 @@ import (
 
 func TestFindAddress(t *testing.T) {
 	m := NewMachine()
-	m.Memory = map[int]ValueWithLabel{
+	m.Memory = map[int32]ValueWithLabel{
 		1: ValueWithLabel{Label("l1"), 10},
 		2: ValueWithLabel{Label("l2"), 20},
 	}
 
 	for _, c := range []struct {
 		label    Label
-		expected int
+		expected int32
 	}{
 		{Label("l1"), 1},
 		{Label("l2"), 2},

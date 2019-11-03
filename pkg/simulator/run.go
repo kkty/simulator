@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"sort"
 )
@@ -30,16 +31,16 @@ func (m *Machine) Step() (bool, error) {
 		m.IntRegisters[i.Operands[0].(string)] = m.IntRegisters[i.Operands[1].(string)] - m.IntRegisters[i.Operands[2].(string)]
 		m.ProgramCounter++
 	case "addi":
-		m.IntRegisters[i.Operands[0].(string)] = m.IntRegisters[i.Operands[1].(string)] + i.Operands[2].(int)
+		m.IntRegisters[i.Operands[0].(string)] = m.IntRegisters[i.Operands[1].(string)] + i.Operands[2].(int32)
 		m.ProgramCounter++
 	case "subi":
-		m.IntRegisters[i.Operands[0].(string)] = m.IntRegisters[i.Operands[1].(string)] - i.Operands[2].(int)
+		m.IntRegisters[i.Operands[0].(string)] = m.IntRegisters[i.Operands[1].(string)] - i.Operands[2].(int32)
 		m.ProgramCounter++
 	case "lui":
-		m.IntRegisters[i.Operands[0].(string)] = i.Operands[1].(int) << 16
+		m.IntRegisters[i.Operands[0].(string)] = i.Operands[1].(int32) << 16
 		m.ProgramCounter++
 	case "ori":
-		m.IntRegisters[i.Operands[0].(string)] = m.IntRegisters[i.Operands[1].(string)] | i.Operands[2].(int)
+		m.IntRegisters[i.Operands[0].(string)] = m.IntRegisters[i.Operands[1].(string)] | i.Operands[2].(int32)
 		m.ProgramCounter++
 	case "slt":
 		if m.IntRegisters[i.Operands[1].(string)] < m.IntRegisters[i.Operands[2].(string)] {
@@ -49,16 +50,16 @@ func (m *Machine) Step() (bool, error) {
 		}
 		m.ProgramCounter++
 	case "sll":
-		m.IntRegisters[i.Operands[0].(string)] = m.IntRegisters[i.Operands[1].(string)] << i.Operands[2].(int)
+		m.IntRegisters[i.Operands[0].(string)] = m.IntRegisters[i.Operands[1].(string)] << i.Operands[2].(int32)
 		m.ProgramCounter++
 	case "sllv":
 		m.IntRegisters[i.Operands[0].(string)] = m.IntRegisters[i.Operands[1].(string)] << m.IntRegisters[i.Operands[2].(string)]
 		m.ProgramCounter++
 	case "j":
-		m.ProgramCounter = i.Operands[0].(int)
+		m.ProgramCounter = i.Operands[0].(int32)
 	case "jal":
 		m.IntRegisters[raRegisterName] = m.ProgramCounter + 1
-		m.ProgramCounter = i.Operands[0].(int)
+		m.ProgramCounter = i.Operands[0].(int32)
 	case "jr":
 		m.ProgramCounter = m.IntRegisters[i.Operands[0].(string)]
 	case "jalr":
@@ -66,7 +67,7 @@ func (m *Machine) Step() (bool, error) {
 		m.ProgramCounter = m.IntRegisters[i.Operands[0].(string)]
 	case "beq":
 		if m.IntRegisters[i.Operands[0].(string)] == m.IntRegisters[i.Operands[1].(string)] {
-			m.ProgramCounter += i.Operands[2].(int) + 1
+			m.ProgramCounter += i.Operands[2].(int32) + 1
 		} else {
 			m.ProgramCounter++
 		}
@@ -88,21 +89,21 @@ func (m *Machine) Step() (bool, error) {
 		m.ProgramCounter++
 	case "bc1t":
 		if m.ConditionRegister {
-			m.ProgramCounter += 1 + i.Operands[0].(int)
+			m.ProgramCounter += 1 + i.Operands[0].(int32)
 		} else {
 			m.ProgramCounter++
 		}
 	case "lw":
-		m.IntRegisters[i.Operands[0].(string)] = m.Memory[i.Operands[1].(int)+m.IntRegisters[i.Operands[2].(string)]].Value.(int)
+		m.IntRegisters[i.Operands[0].(string)] = m.Memory[i.Operands[1].(int32)+m.IntRegisters[i.Operands[2].(string)]].Value.(int32)
 		m.ProgramCounter++
 	case "lwc1":
-		m.FloatRegisters[i.Operands[0].(string)] = m.Memory[i.Operands[1].(int)+m.IntRegisters[i.Operands[2].(string)]].Value.(float32)
+		m.FloatRegisters[i.Operands[0].(string)] = m.Memory[i.Operands[1].(int32)+m.IntRegisters[i.Operands[2].(string)]].Value.(float32)
 		m.ProgramCounter++
 	case "sw":
-		m.setValueToMemory(i.Operands[1].(int)+m.IntRegisters[i.Operands[2].(string)], m.IntRegisters[i.Operands[0].(string)])
+		m.setValueToMemory(i.Operands[1].(int32)+m.IntRegisters[i.Operands[2].(string)], m.IntRegisters[i.Operands[0].(string)])
 		m.ProgramCounter++
 	case "swc1":
-		m.setValueToMemory(i.Operands[1].(int)+m.IntRegisters[i.Operands[2].(string)], m.FloatRegisters[i.Operands[0].(string)])
+		m.setValueToMemory(i.Operands[1].(int32)+m.IntRegisters[i.Operands[2].(string)], m.FloatRegisters[i.Operands[0].(string)])
 		m.ProgramCounter++
 	case "add.s":
 		m.FloatRegisters[i.Operands[0].(string)] = m.FloatRegisters[i.Operands[1].(string)] + m.FloatRegisters[i.Operands[2].(string)]
@@ -116,8 +117,11 @@ func (m *Machine) Step() (bool, error) {
 	case "div.s":
 		m.FloatRegisters[i.Operands[0].(string)] = m.FloatRegisters[i.Operands[1].(string)] / m.FloatRegisters[i.Operands[2].(string)]
 		m.ProgramCounter++
+	case "sqrt":
+		m.FloatRegisters[i.Operands[0].(string)] = float32(math.Sqrt(float64(m.FloatRegisters[i.Operands[1].(string)])))
+		m.ProgramCounter++
 	case "read_i":
-		var v int
+		var v int32
 		_, err := fmt.Scanf("%d", &v)
 		if err != nil {
 			return false, err
@@ -156,14 +160,14 @@ func (m *Machine) Run(debug bool) (int, error) {
 		// Prints the initial memory state.
 
 		memory := []struct {
-			Address int
+			Address int32
 			Value   interface{}
 			Label   Label
 		}{}
 
 		for address, valueWithLabel := range m.Memory {
 			memory = append(memory, struct {
-				Address int
+				Address int32
 				Value   interface{}
 				Label   Label
 			}{address, valueWithLabel.Value, valueWithLabel.Label})

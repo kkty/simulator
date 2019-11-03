@@ -27,7 +27,7 @@ func TestParseInstruction(t *testing.T) {
 		},
 		{
 			[]string{"addi", "$i0", "$i1", "1"},
-			Instruction{"addi", []interface{}{"$i0", "$i1", 1}},
+			Instruction{"addi", []interface{}{"$i0", "$i1", int32(1)}},
 		},
 		{
 			[]string{"addi", "$i0", "$i1", "l1"},

@@ -15,7 +15,7 @@ func parseInstruction(fields []string) (Instruction, error) {
 			return Label(s)
 		}
 
-		return i
+		return int32(i)
 	}
 
 	opcode := fields[0]
@@ -61,6 +61,8 @@ func parseInstruction(fields []string) (Instruction, error) {
 	case "c.eq.s":
 		fallthrough
 	case "c.le.s":
+		fallthrough
+	case "sqrt":
 		operands = append(operands, fields[1], fields[2])
 	case "j":
 		fallthrough
@@ -145,7 +147,7 @@ func (m *Machine) Load(program string) error {
 		case "data":
 			var err error
 
-			m.Memory[len(m.Memory)], err = parseData(fields)
+			m.Memory[int32(len(m.Memory))], err = parseData(fields)
 
 			if err != nil {
 				return wrapError(err)
@@ -162,7 +164,7 @@ func (m *Machine) Load(program string) error {
 				return wrapError(err)
 			}
 
-			m.Memory[len(m.Memory)] = ValueWithLabel{nextLabel, instruction}
+			m.Memory[int32(len(m.Memory))] = ValueWithLabel{nextLabel, instruction}
 
 			nextLabel = ""
 		default:
@@ -172,7 +174,7 @@ func (m *Machine) Load(program string) error {
 
 	// Iterates thorough the memory and replaces labels with address values.
 	for i := 0; i < len(m.Memory); i++ {
-		if instruction, ok := m.Memory[i].Value.(Instruction); ok {
+		if instruction, ok := m.Memory[int32(i)].Value.(Instruction); ok {
 			for j := 0; j < len(instruction.Operands); j++ {
 				if label, ok := instruction.Operands[j].(Label); ok {
 					var err error
