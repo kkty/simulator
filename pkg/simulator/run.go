@@ -94,10 +94,36 @@ func (m *Machine) Step() (bool, error) {
 			m.ProgramCounter++
 		}
 	case "lw":
-		m.IntRegisters[i.Operands[0].(string)] = m.Memory[i.Operands[1].(int32)+m.IntRegisters[i.Operands[2].(string)]].Value.(int32)
+		value := m.Memory[i.Operands[1].(int32)+m.IntRegisters[i.Operands[2].(string)]].Value
+
+		if v, ok := value.(int32); ok {
+			m.IntRegisters[i.Operands[0].(string)] = v
+		} else if v, ok := value.(float32); ok {
+			u := math.Float32bits(v)
+
+			if u >= (1 << 31) {
+				m.IntRegisters[i.Operands[0].(string)] = -int32((^u) + 1)
+			} else {
+				m.IntRegisters[i.Operands[0].(string)] = int32(u)
+			}
+		} else {
+			return false, errors.New("invalid data on memory")
+		}
 		m.ProgramCounter++
 	case "lwc1":
-		m.FloatRegisters[i.Operands[0].(string)] = m.Memory[i.Operands[1].(int32)+m.IntRegisters[i.Operands[2].(string)]].Value.(float32)
+		value := m.Memory[i.Operands[1].(int32)+m.IntRegisters[i.Operands[2].(string)]].Value
+
+		if v, ok := value.(float32); ok {
+			m.FloatRegisters[i.Operands[0].(string)] = v
+		} else if v, ok := value.(int32); ok {
+			if v >= 0 {
+				m.FloatRegisters[i.Operands[0].(string)] = math.Float32frombits(uint32(v))
+			} else {
+				m.FloatRegisters[i.Operands[0].(string)] = math.Float32frombits((^uint32(-v)) + 1)
+			}
+		} else {
+			return false, errors.New("invalid data on memory")
+		}
 		m.ProgramCounter++
 	case "sw":
 		m.setValueToMemory(i.Operands[1].(int32)+m.IntRegisters[i.Operands[2].(string)], m.IntRegisters[i.Operands[0].(string)])
