@@ -116,8 +116,27 @@ func (m *Machine) Step() (bool, error) {
 	case "div.s":
 		m.FloatRegisters[i.Operands[0].(string)] = m.FloatRegisters[i.Operands[1].(string)] / m.FloatRegisters[i.Operands[2].(string)]
 		m.ProgramCounter++
-	case "out":
+	case "read_i":
+		var v int
+		_, err := fmt.Scanf("%d", &v)
+		if err != nil {
+			return false, err
+		}
+		m.IntRegisters[i.Operands[0].(string)] = v
+		m.ProgramCounter++
+	case "read_f":
+		var v float32
+		_, err := fmt.Scanf("%f", &v)
+		if err != nil {
+			return false, err
+		}
+		m.FloatRegisters[i.Operands[0].(string)] = v
+		m.ProgramCounter++
+	case "out_i":
 		fmt.Print(m.IntRegisters[i.Operands[0].(string)])
+		m.ProgramCounter++
+	case "out_c":
+		fmt.Print(string(m.IntRegisters[i.Operands[0].(string)]))
 		m.ProgramCounter++
 	case "nop":
 		m.ProgramCounter++

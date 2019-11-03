@@ -70,7 +70,13 @@ func parseInstruction(fields []string) (Instruction, error) {
 		fallthrough
 	case "jalr":
 		fallthrough
-	case "out":
+	case "out_i":
+		fallthrough
+	case "out_c":
+		fallthrough
+	case "read_i":
+		fallthrough
+	case "read_f":
 		operands = append(operands, fields[1])
 	case "exit":
 	case "nop":
