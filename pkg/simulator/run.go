@@ -149,7 +149,9 @@ func (m *Machine) Step() (bool, error) {
 	return false, nil
 }
 
-func (m *Machine) Run(debug bool) error {
+func (m *Machine) Run(debug bool) (int, error) {
+	executed := 0
+
 	if debug {
 		// Prints the initial memory state.
 
@@ -172,7 +174,7 @@ func (m *Machine) Run(debug bool) error {
 		b, err := json.Marshal(memory)
 
 		if err != nil {
-			return err
+			return executed, err
 		}
 
 		fmt.Fprintf(os.Stderr, "%s\n", string(b))
@@ -189,7 +191,7 @@ func (m *Machine) Run(debug bool) error {
 			})
 
 			if err != nil {
-				return err
+				return executed, err
 			}
 
 			fmt.Fprintf(os.Stderr, "%s\n", string(b))
@@ -198,11 +200,13 @@ func (m *Machine) Run(debug bool) error {
 		done, err := m.Step()
 
 		if err != nil {
-			return err
+			return executed, err
 		}
 
+		executed++
+
 		if done {
-			return nil
+			return executed, nil
 		}
 	}
 }

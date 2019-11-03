@@ -46,7 +46,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := m.Run(*debug); err != nil {
+	executed, err := m.Run(*debug)
+
+	if err != nil {
 		log.Fatal(err)
 	}
+
+	fmt.Fprintf(os.Stderr, "executed %d instructions\n", executed)
 }
