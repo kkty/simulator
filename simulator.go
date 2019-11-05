@@ -46,11 +46,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	executed, err := m.Run(*debug)
+	stats, err := m.Run(*debug)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Fprintf(os.Stderr, "executed %d instructions\n", executed)
+	fmt.Fprintln(os.Stderr, "")
+	fmt.Fprintf(os.Stderr, "executed instructions: %v\n", stats.Executed)
+	fmt.Fprintf(os.Stderr, "frequent labels: %v\n", stats.Jumps(30))
 }

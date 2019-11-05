@@ -179,8 +179,40 @@ func (m *Machine) Step() (bool, error) {
 	return false, nil
 }
 
-func (m *Machine) Run(debug bool) (int, error) {
-	executed := 0
+// Stats can be used to count the number of executed instructions and
+// the number of jumps to each label.
+type Stats struct {
+	Executed int
+	jumps    map[Label]int
+}
+
+// LabelWithCount is used to store a label and the number of times it was called.
+type LabelWithCount struct {
+	Label Label
+	Count int
+}
+
+// Jumps fetches the labels that were most frequently jumped to.
+func (s *Stats) Jumps(count int) []LabelWithCount {
+	l := []LabelWithCount{}
+
+	for label, count := range s.jumps {
+		l = append(l, LabelWithCount{label, count})
+	}
+
+	sort.Slice(l, func(i, j int) bool { return l[i].Count > l[j].Count })
+
+	if len(l) <= count {
+		return l
+	} else {
+		return l[:count]
+	}
+}
+
+func (m *Machine) Run(debug bool) (Stats, error) {
+	stats := Stats{
+		jumps: make(map[Label]int),
+	}
 
 	if debug {
 		// Prints the initial memory state.
@@ -204,7 +236,7 @@ func (m *Machine) Run(debug bool) (int, error) {
 		b, err := json.Marshal(memory)
 
 		if err != nil {
-			return executed, err
+			return stats, err
 		}
 
 		fmt.Fprintf(os.Stderr, "%s\n", string(b))
@@ -221,22 +253,26 @@ func (m *Machine) Run(debug bool) (int, error) {
 			})
 
 			if err != nil {
-				return executed, err
+				return stats, err
 			}
 
 			fmt.Fprintf(os.Stderr, "%s\n", string(b))
 		}
 
+		if label := m.Memory[m.ProgramCounter].Label; label != "" {
+			stats.jumps[label] += 1
+		}
+
 		done, err := m.Step()
 
 		if err != nil {
-			return executed, err
+			return stats, err
 		}
 
-		executed++
+		stats.Executed++
 
 		if done {
-			return executed, nil
+			return stats, nil
 		}
 	}
 }
