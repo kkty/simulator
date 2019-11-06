@@ -147,7 +147,7 @@ func (m *Machine) Load(program string) error {
 		case "data":
 			var err error
 
-			m.Memory[int32(len(m.Memory))], err = parseData(fields)
+			m.memory[int32(len(m.memory))], err = parseData(fields)
 
 			if err != nil {
 				return wrapError(err)
@@ -164,7 +164,7 @@ func (m *Machine) Load(program string) error {
 				return wrapError(err)
 			}
 
-			m.Memory[int32(len(m.Memory))] = ValueWithLabel{nextLabel, instruction}
+			m.memory[int32(len(m.memory))] = ValueWithLabel{nextLabel, instruction}
 
 			nextLabel = ""
 		default:
@@ -173,8 +173,8 @@ func (m *Machine) Load(program string) error {
 	}
 
 	// Iterates thorough the memory and replaces labels with address values.
-	for i := 0; i < len(m.Memory); i++ {
-		if instruction, ok := m.Memory[int32(i)].Value.(Instruction); ok {
+	for i := 0; i < len(m.memory); i++ {
+		if instruction, ok := m.memory[int32(i)].Value.(Instruction); ok {
 			for j := 0; j < len(instruction.Operands); j++ {
 				if label, ok := instruction.Operands[j].(Label); ok {
 					var err error

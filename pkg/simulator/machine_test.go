@@ -8,7 +8,7 @@ import (
 
 func TestFindAddress(t *testing.T) {
 	m := NewMachine()
-	m.Memory = map[int32]ValueWithLabel{
+	m.memory = map[int32]ValueWithLabel{
 		1: ValueWithLabel{Label("l1"), 10},
 		2: ValueWithLabel{Label("l2"), 20},
 	}

@@ -12,7 +12,7 @@ import (
 // Step fetches an instruction and executes it.
 // Returns true if it has encountered "exit" call.
 func (m *Machine) Step() (bool, error) {
-	i, ok := m.Memory[m.ProgramCounter].Value.(Instruction)
+	i, ok := m.memory[m.ProgramCounter].Value.(Instruction)
 
 	if !ok {
 		return false, errors.New("no instruction on memory")
@@ -94,7 +94,7 @@ func (m *Machine) Step() (bool, error) {
 			m.ProgramCounter++
 		}
 	case "lw":
-		value := m.Memory[i.Operands[1].(int32)+m.IntRegisters[i.Operands[2].(string)]].Value
+		value := m.memory[i.Operands[1].(int32)+m.IntRegisters[i.Operands[2].(string)]].Value
 
 		if v, ok := value.(int32); ok {
 			m.IntRegisters[i.Operands[0].(string)] = v
@@ -111,7 +111,7 @@ func (m *Machine) Step() (bool, error) {
 		}
 		m.ProgramCounter++
 	case "lwc1":
-		value := m.Memory[i.Operands[1].(int32)+m.IntRegisters[i.Operands[2].(string)]].Value
+		value := m.memory[i.Operands[1].(int32)+m.IntRegisters[i.Operands[2].(string)]].Value
 
 		if v, ok := value.(float32); ok {
 			m.FloatRegisters[i.Operands[0].(string)] = v
@@ -223,7 +223,7 @@ func (m *Machine) Run(debug bool) (Stats, error) {
 			Label   Label
 		}{}
 
-		for address, valueWithLabel := range m.Memory {
+		for address, valueWithLabel := range m.memory {
 			memory = append(memory, struct {
 				Address int32
 				Value   interface{}
@@ -249,7 +249,7 @@ func (m *Machine) Run(debug bool) (Stats, error) {
 				"programCounter": m.ProgramCounter,
 				"intRegisters":   m.IntRegisters,
 				"floatRegisters": m.FloatRegisters,
-				"instruction":    m.Memory[m.ProgramCounter],
+				"instruction":    m.memory[m.ProgramCounter],
 			})
 
 			if err != nil {
@@ -259,7 +259,7 @@ func (m *Machine) Run(debug bool) (Stats, error) {
 			fmt.Fprintf(os.Stderr, "%s\n", string(b))
 		}
 
-		if label := m.Memory[m.ProgramCounter].Label; label != "" {
+		if label := m.memory[m.ProgramCounter].Label; label != "" {
 			stats.jumps[label] += 1
 		}
 
