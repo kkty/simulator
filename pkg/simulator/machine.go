@@ -1,6 +1,9 @@
 package simulator
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+)
 
 const zeroRegisterName = "$zero"
 const raRegisterName = "$ra"
@@ -40,6 +43,25 @@ func NewMachine() Machine {
 		memory:           make(map[int32]ValueWithLabel),
 		findAddressCache: make(map[Label]int32),
 	}
+}
+
+// MemoryEntry groups a value, a label and an address.
+type MemoryEntry struct {
+	ValueWithLabel ValueWithLabel
+	Address        int32
+}
+
+// Memory lists the machine's memory entries ordered by their addresses.
+func (m *Machine) Memory() []MemoryEntry {
+	memory := []MemoryEntry{}
+
+	for address, valueWithLabel := range m.memory {
+		memory = append(memory, MemoryEntry{valueWithLabel, address})
+	}
+
+	sort.Slice(memory, func(i, j int) bool { return memory[i].Address < memory[j].Address })
+
+	return memory
 }
 
 // setValueToMemory sets a value to the memory without modifying label values.

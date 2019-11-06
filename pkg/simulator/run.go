@@ -216,22 +216,7 @@ func (m *Machine) Run(debug bool) (Stats, error) {
 
 	if debug {
 		// Prints the initial memory state.
-
-		memory := []struct {
-			Address int32
-			Value   interface{}
-			Label   Label
-		}{}
-
-		for address, valueWithLabel := range m.memory {
-			memory = append(memory, struct {
-				Address int32
-				Value   interface{}
-				Label   Label
-			}{address, valueWithLabel.Value, valueWithLabel.Label})
-		}
-
-		sort.Slice(memory, func(i, j int) bool { return memory[i].Address < memory[j].Address })
+		memory := m.Memory()
 
 		b, err := json.Marshal(memory)
 
