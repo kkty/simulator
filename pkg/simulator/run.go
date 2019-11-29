@@ -146,6 +146,12 @@ func (m *Machine) Step() (bool, error) {
 	case "sqrt":
 		m.FloatRegisters[i.Operands[0].(string)] = float32(math.Sqrt(float64(m.FloatRegisters[i.Operands[1].(string)])))
 		m.ProgramCounter++
+	case "ftoi":
+		m.IntRegisters[i.Operands[0].(string)] = int32(math.Round(float64(m.FloatRegisters[i.Operands[1].(string)])))
+		m.ProgramCounter++
+	case "itof":
+		m.FloatRegisters[i.Operands[0].(string)] = float32(m.IntRegisters[i.Operands[1].(string)])
+		m.ProgramCounter++
 	case "read_i":
 		var v int32
 		_, err := fmt.Scanf("%d", &v)

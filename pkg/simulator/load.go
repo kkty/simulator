@@ -63,6 +63,10 @@ func parseInstruction(fields []string) (Instruction, error) {
 	case "c.le.s":
 		fallthrough
 	case "sqrt":
+		fallthrough
+	case "ftoi":
+		fallthrough
+	case "itof":
 		operands = append(operands, fields[1], fields[2])
 	case "j":
 		fallthrough
