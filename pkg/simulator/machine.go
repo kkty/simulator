@@ -5,11 +5,6 @@ import (
 	"sort"
 )
 
-const zeroRegisterName = "$zero"
-const raRegisterName = "$ra"
-const spRegisterName = "$sp"
-const hpRegisterName = "$hp"
-
 type Label string
 
 type ValueWithLabel struct {
@@ -27,9 +22,9 @@ type Instruction struct {
 
 // Machine is an abstraction of physical machines.
 type Machine struct {
-	IntRegisters      map[string]int32
-	FloatRegisters    map[string]float32
-	memory            map[int32]ValueWithLabel
+	IntRegisters      []int32
+	FloatRegisters    []float32
+	memory            []ValueWithLabel
 	ProgramCounter    int32
 	ConditionRegister bool
 	findAddressCache  map[Label]int32
@@ -38,9 +33,9 @@ type Machine struct {
 // NewMachine creates a Machine instance with empty registers/memory.
 func NewMachine() Machine {
 	return Machine{
-		IntRegisters:     make(map[string]int32),
-		FloatRegisters:   make(map[string]float32),
-		memory:           make(map[int32]ValueWithLabel),
+		IntRegisters:     make([]int32, 32),
+		FloatRegisters:   make([]float32, 32),
+		memory:           make([]ValueWithLabel, 100000000),
 		findAddressCache: make(map[Label]int32),
 	}
 }
@@ -56,7 +51,7 @@ func (m *Machine) Memory() []MemoryEntry {
 	memory := []MemoryEntry{}
 
 	for address, valueWithLabel := range m.memory {
-		memory = append(memory, MemoryEntry{valueWithLabel, address})
+		memory = append(memory, MemoryEntry{valueWithLabel, int32(address)})
 	}
 
 	sort.Slice(memory, func(i, j int) bool { return memory[i].Address < memory[j].Address })
@@ -77,8 +72,8 @@ func (m *Machine) FindAddress(label Label) (int32, error) {
 
 	for i, d := range m.memory {
 		if d.Label == label {
-			m.findAddressCache[label] = i
-			return i, nil
+			m.findAddressCache[label] = int32(i)
+			return int32(i), nil
 		}
 	}
 

@@ -3,9 +3,47 @@ package simulator
 import (
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 )
+
+var (
+	intRegisters = map[string]int32{
+		"$zero": 0, "$tmp0": 1, "$tmp1": 2,
+		"$hp": 29, "$sp": 30, "$ra": 31,
+	}
+
+	floatRegisters = map[string]int32{
+		"$fzero": 0, "$ftmp": 1,
+	}
+)
+
+func init() {
+	for i := int32(0); i < 26; i++ {
+		intRegisters[fmt.Sprintf("$i%d", i)] = i + 3
+	}
+
+	for i := int32(0); i < 30; i++ {
+		floatRegisters[fmt.Sprintf("$f%d", i)] = i + 2
+	}
+}
+
+func intRegister(s string) int32 {
+	if _, exists := intRegisters[s]; !exists {
+		log.Fatalf("unknown register: %s", s)
+	}
+
+	return intRegisters[s]
+}
+
+func floatRegister(s string) int32 {
+	if _, exists := floatRegisters[s]; !exists {
+		log.Fatalf("unknown register: %s", s)
+	}
+
+	return floatRegisters[s]
+}
 
 func parseInstruction(fields []string) (Instruction, error) {
 	immediateOrLabel := func(s string) interface{} {
@@ -29,7 +67,8 @@ func parseInstruction(fields []string) (Instruction, error) {
 	case "slt":
 		fallthrough
 	case "sllv":
-		fallthrough
+		operands = append(operands,
+			intRegister(fields[1]), intRegister(fields[2]), intRegister(fields[3]))
 	case "add.s":
 		fallthrough
 	case "sub.s":
@@ -37,7 +76,8 @@ func parseInstruction(fields []string) (Instruction, error) {
 	case "mul.s":
 		fallthrough
 	case "div.s":
-		operands = append(operands, fields[1], fields[2], fields[3])
+		operands = append(operands,
+			floatRegister(fields[1]), floatRegister(fields[2]), floatRegister(fields[3]))
 	case "sll":
 		fallthrough
 	case "addi":
@@ -47,15 +87,18 @@ func parseInstruction(fields []string) (Instruction, error) {
 	case "ori":
 		fallthrough
 	case "beq":
-		operands = append(operands, fields[1], fields[2], immediateOrLabel(fields[3]))
+		operands = append(operands,
+			intRegister(fields[1]), intRegister(fields[2]), immediateOrLabel(fields[3]))
 	case "lw":
 		fallthrough
+	case "sw":
+		operands = append(operands,
+			intRegister(fields[1]), immediateOrLabel(fields[2]), intRegister(fields[3]))
 	case "lwc1":
 		fallthrough
-	case "sw":
-		fallthrough
 	case "swc1":
-		operands = append(operands, fields[1], immediateOrLabel(fields[2]), fields[3])
+		operands = append(operands,
+			floatRegister(fields[1]), immediateOrLabel(fields[2]), intRegister(fields[3]))
 	case "bc1t":
 		operands = append(operands, immediateOrLabel(fields[1]))
 	case "c.eq.s":
@@ -63,11 +106,14 @@ func parseInstruction(fields []string) (Instruction, error) {
 	case "c.le.s":
 		fallthrough
 	case "sqrt":
-		fallthrough
+		operands = append(operands,
+			floatRegister(fields[1]), floatRegister(fields[2]))
 	case "ftoi":
-		fallthrough
+		operands = append(operands,
+			intRegister(fields[1]), floatRegister(fields[2]))
 	case "itof":
-		operands = append(operands, fields[1], fields[2])
+		operands = append(operands,
+			floatRegister(fields[1]), intRegister(fields[2]))
 	case "j":
 		fallthrough
 	case "jal":
@@ -81,9 +127,9 @@ func parseInstruction(fields []string) (Instruction, error) {
 	case "out_c":
 		fallthrough
 	case "read_i":
-		fallthrough
+		operands = append(operands, intRegister(fields[1]))
 	case "read_f":
-		operands = append(operands, fields[1])
+		operands = append(operands, floatRegister(fields[1]))
 	case "exit":
 	case "nop":
 	default:
@@ -124,6 +170,7 @@ func (m *Machine) Load(program string) error {
 	section := "text"
 
 	var nextLabel Label
+	var nextAddress int32
 
 	for _, line := range strings.Split(program, "\n") {
 		// Replaces "(", ")" or "," with whitespaces.
@@ -151,7 +198,8 @@ func (m *Machine) Load(program string) error {
 		case "data":
 			var err error
 
-			m.memory[int32(len(m.memory))], err = parseData(fields)
+			m.memory[nextAddress], err = parseData(fields)
+			nextAddress++
 
 			if err != nil {
 				return wrapError(err)
@@ -168,7 +216,8 @@ func (m *Machine) Load(program string) error {
 				return wrapError(err)
 			}
 
-			m.memory[int32(len(m.memory))] = ValueWithLabel{nextLabel, instruction}
+			m.memory[nextAddress] = ValueWithLabel{nextLabel, instruction}
+			nextAddress++
 
 			nextLabel = ""
 		default:
@@ -177,8 +226,8 @@ func (m *Machine) Load(program string) error {
 	}
 
 	// Iterates thorough the memory and replaces labels with address values.
-	for i := 0; i < len(m.memory); i++ {
-		if instruction, ok := m.memory[int32(i)].Value.(Instruction); ok {
+	for i := int32(0); i < nextAddress; i++ {
+		if instruction, ok := m.memory[i].Value.(Instruction); ok {
 			for j := 0; j < len(instruction.Operands); j++ {
 				if label, ok := instruction.Operands[j].(Label); ok {
 					var err error
