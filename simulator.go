@@ -16,8 +16,6 @@ func main() {
 		flag.PrintDefaults()
 	}
 
-	debug := flag.Bool("debug", false, "write debug log to stderr")
-
 	flag.Parse()
 
 	fileName := flag.Arg(0)
@@ -46,13 +44,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	stats, err := m.Run(*debug)
+	executed, err := m.Run()
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	fmt.Fprintln(os.Stderr, "")
-	fmt.Fprintf(os.Stderr, "executed instructions: %v\n", stats.Executed)
-	fmt.Fprintf(os.Stderr, "frequent labels: %v\n", stats.Jumps(30))
+	fmt.Fprintf(os.Stderr, "executed instructions: %v\n", executed)
 }
