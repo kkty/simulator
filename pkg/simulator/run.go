@@ -50,12 +50,12 @@ func (m *Machine) Step() (bool, error) {
 	case "j":
 		m.ProgramCounter = i.Operands[0].(int32)
 	case "jal":
-		m.IntRegisters[intRegisters["$ra"]] = m.ProgramCounter + 1
+		m.IntRegisters[31] = m.ProgramCounter + 1
 		m.ProgramCounter = i.Operands[0].(int32)
 	case "jr":
 		m.ProgramCounter = m.IntRegisters[i.Operands[0].(int32)]
 	case "jalr":
-		m.IntRegisters[intRegisters["$ra"]] = m.ProgramCounter + 1
+		m.IntRegisters[31] = m.ProgramCounter + 1
 		m.ProgramCounter = m.IntRegisters[i.Operands[0].(int32)]
 	case "beq":
 		if m.IntRegisters[i.Operands[0].(int32)] == m.IntRegisters[i.Operands[1].(int32)] {
