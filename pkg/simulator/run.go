@@ -6,6 +6,22 @@ import (
 	"math"
 )
 
+func uint32ToInt32(i uint32) int32 {
+	if i >= (1 << 31) {
+		return -int32((^i) + 1)
+	} else {
+		return int32(i)
+	}
+}
+
+func int32ToUint32(i int32) uint32 {
+	if i >= 0 {
+		return uint32(i)
+	} else {
+		return (^uint32(-i)) + 1
+	}
+}
+
 // Step fetches an instruction and executes it.
 // Returns true if it has encountered "exit" call.
 func (m *Machine) Step() (bool, error) {
@@ -29,7 +45,7 @@ func (m *Machine) Step() (bool, error) {
 		m.IntRegisters[i.Operands[0].(int32)] = m.IntRegisters[i.Operands[1].(int32)] - i.Operands[2].(int32)
 		m.ProgramCounter++
 	case "lui":
-		m.IntRegisters[i.Operands[0].(int32)] = i.Operands[1].(int32) << 16
+		m.IntRegisters[i.Operands[0].(int32)] = uint32ToInt32(int32ToUint32(i.Operands[2].(int32))<<16 | int32ToUint32(m.IntRegisters[i.Operands[1].(int32)]))
 		m.ProgramCounter++
 	case "ori":
 		m.IntRegisters[i.Operands[0].(int32)] = m.IntRegisters[i.Operands[1].(int32)] | i.Operands[2].(int32)
@@ -79,6 +95,18 @@ func (m *Machine) Step() (bool, error) {
 		}
 
 		m.ProgramCounter++
+	case "beqs":
+		if m.FloatRegisters[i.Operands[0].(int32)] == m.FloatRegisters[i.Operands[1].(int32)] {
+			m.ProgramCounter += i.Operands[2].(int32) + 1
+		} else {
+			m.ProgramCounter++
+		}
+	case "bls":
+		if m.FloatRegisters[i.Operands[0].(int32)] < m.FloatRegisters[i.Operands[1].(int32)] {
+			m.ProgramCounter += i.Operands[2].(int32) + 1
+		} else {
+			m.ProgramCounter++
+		}
 	case "bc1t":
 		if m.ConditionRegister {
 			m.ProgramCounter += 1 + i.Operands[0].(int32)
@@ -141,10 +169,24 @@ func (m *Machine) Step() (bool, error) {
 		m.FloatRegisters[i.Operands[0].(int32)] = float32(math.Sqrt(float64(m.FloatRegisters[i.Operands[1].(int32)])))
 		m.ProgramCounter++
 	case "ftoi":
-		m.IntRegisters[i.Operands[0].(int32)] = int32(math.Round(float64(m.FloatRegisters[i.Operands[1].(int32)])))
+		v := int32(math.Round(float64(m.FloatRegisters[i.Operands[1].(int32)])))
+
+		if v >= 0 {
+			m.FloatRegisters[i.Operands[0].(int32)] = math.Float32frombits(uint32(v))
+		} else {
+			m.FloatRegisters[i.Operands[0].(int32)] = math.Float32frombits((^uint32(-v)) + 1)
+		}
+
 		m.ProgramCounter++
 	case "itof":
-		m.FloatRegisters[i.Operands[0].(int32)] = float32(m.IntRegisters[i.Operands[1].(int32)])
+		u := math.Float32bits(m.FloatRegisters[i.Operands[1].(int32)])
+
+		if u >= (1 << 31) {
+			m.FloatRegisters[i.Operands[0].(int32)] = float32(-int32((^u) + 1))
+		} else {
+			m.FloatRegisters[i.Operands[0].(int32)] = float32(int32(u))
+		}
+
 		m.ProgramCounter++
 	case "read_i":
 		var v int32

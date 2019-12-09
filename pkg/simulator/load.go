@@ -10,7 +10,7 @@ import (
 
 var (
 	intRegisters = map[string]int32{
-		"$zero": 0, "$tmp0": 1, "$tmp1": 2,
+		"$zero": 0, "$tmp0": 1, "$tmp1": 2, "$tmp2": 3,
 		"$hp": 29, "$sp": 30, "$ra": 31,
 	}
 
@@ -20,8 +20,8 @@ var (
 )
 
 func init() {
-	for i := int32(0); i < 26; i++ {
-		intRegisters[fmt.Sprintf("$i%d", i)] = i + 3
+	for i := int32(0); i < 25; i++ {
+		intRegisters[fmt.Sprintf("$i%d", i)] = i + 4
 	}
 
 	for i := int32(0); i < 30; i++ {
@@ -89,6 +89,11 @@ func parseInstruction(fields []string) (Instruction, error) {
 	case "beq":
 		operands = append(operands,
 			intRegister(fields[1]), intRegister(fields[2]), immediateOrLabel(fields[3]))
+	case "beqs":
+		fallthrough
+	case "bls":
+		operands = append(operands,
+			floatRegister(fields[1]), floatRegister(fields[2]), immediateOrLabel(fields[3]))
 	case "lw":
 		fallthrough
 	case "sw":
@@ -106,14 +111,12 @@ func parseInstruction(fields []string) (Instruction, error) {
 	case "c.le.s":
 		fallthrough
 	case "sqrt":
-		operands = append(operands,
-			floatRegister(fields[1]), floatRegister(fields[2]))
+		fallthrough
 	case "ftoi":
-		operands = append(operands,
-			intRegister(fields[1]), floatRegister(fields[2]))
+		fallthrough
 	case "itof":
 		operands = append(operands,
-			floatRegister(fields[1]), intRegister(fields[2]))
+			floatRegister(fields[1]), floatRegister(fields[2]))
 	case "j":
 		fallthrough
 	case "jal":
@@ -165,7 +168,7 @@ func parseData(fields []string) (ValueWithLabel, error) {
 }
 
 // Load loads a program onto the memory.
-func (m *Machine) Load(program string) error {
+func (m *Machine) Load(program string, mappedData []byte, mappedAddress int32) error {
 	// The default section is "text".
 	section := "text"
 
@@ -238,6 +241,15 @@ func (m *Machine) Load(program string) error {
 				}
 			}
 		}
+	}
+
+	for i, c := range mappedData {
+		i := int32(i)
+		if i%4 == 0 {
+			m.memory[mappedAddress+(i/4)*4].Value = int32(0)
+		}
+
+		m.memory[mappedAddress+(i/4)*4].Value = uint32ToInt32(int32ToUint32(m.memory[mappedAddress+(i/4)*4].Value.(int32)) + uint32(c)<<(24-(i%4)*8))
 	}
 
 	return nil
