@@ -94,6 +94,9 @@ func parseInstruction(fields []string) (Instruction, error) {
 	case "BLS":
 		operands = append(operands,
 			floatRegister(fields[1]), floatRegister(fields[2]), immediateOrLabel(fields[3]))
+	case "BZS":
+		operands = append(operands,
+			floatRegister(fields[1]), immediateOrLabel(fields[2]))
 	case "LW":
 		fallthrough
 	case "SW":

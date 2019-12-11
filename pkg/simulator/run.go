@@ -91,6 +91,12 @@ func (m *Machine) Step() (bool, error) {
 		} else {
 			m.ProgramCounter++
 		}
+	case "BZS":
+		if m.FloatRegisters[i.Operands[0].(int32)] == 0 {
+			m.ProgramCounter += i.Operands[1].(int32) + 1
+		} else {
+			m.ProgramCounter++
+		}
 	case "LW":
 		address := i.Operands[1].(int32) + m.IntRegisters[i.Operands[2].(int32)]
 		value := m.memory[address].Value
