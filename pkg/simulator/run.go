@@ -32,88 +32,66 @@ func (m *Machine) Step() (bool, error) {
 	}
 
 	switch opcode := i.Opcode; opcode {
-	case "add":
+	case "ADD":
 		m.IntRegisters[i.Operands[0].(int32)] = m.IntRegisters[i.Operands[1].(int32)] + m.IntRegisters[i.Operands[2].(int32)]
 		m.ProgramCounter++
-	case "sub":
+	case "SUB":
 		m.IntRegisters[i.Operands[0].(int32)] = m.IntRegisters[i.Operands[1].(int32)] - m.IntRegisters[i.Operands[2].(int32)]
 		m.ProgramCounter++
-	case "addi":
+	case "ADDI":
 		m.IntRegisters[i.Operands[0].(int32)] = m.IntRegisters[i.Operands[1].(int32)] + i.Operands[2].(int32)
 		m.ProgramCounter++
-	case "subi":
+	case "SUBI":
 		m.IntRegisters[i.Operands[0].(int32)] = m.IntRegisters[i.Operands[1].(int32)] - i.Operands[2].(int32)
 		m.ProgramCounter++
-	case "lui":
+	case "LUI":
 		m.IntRegisters[i.Operands[0].(int32)] = uint32ToInt32(int32ToUint32(i.Operands[2].(int32))<<16 | int32ToUint32(m.IntRegisters[i.Operands[1].(int32)]))
 		m.ProgramCounter++
-	case "ori":
+	case "ORI":
 		m.IntRegisters[i.Operands[0].(int32)] = m.IntRegisters[i.Operands[1].(int32)] | i.Operands[2].(int32)
 		m.ProgramCounter++
-	case "slt":
+	case "SLT":
 		if m.IntRegisters[i.Operands[1].(int32)] < m.IntRegisters[i.Operands[2].(int32)] {
 			m.IntRegisters[i.Operands[0].(int32)] = 1
 		} else {
 			m.IntRegisters[i.Operands[0].(int32)] = 0
 		}
 		m.ProgramCounter++
-	case "sll":
+	case "SLL":
 		m.IntRegisters[i.Operands[0].(int32)] = m.IntRegisters[i.Operands[1].(int32)] << i.Operands[2].(int32)
 		m.ProgramCounter++
-	case "sllv":
+	case "SLLV":
 		m.IntRegisters[i.Operands[0].(int32)] = m.IntRegisters[i.Operands[1].(int32)] << m.IntRegisters[i.Operands[2].(int32)]
 		m.ProgramCounter++
-	case "j":
+	case "J":
 		m.ProgramCounter = i.Operands[0].(int32)
-	case "jal":
+	case "JAL":
 		m.IntRegisters[31] = m.ProgramCounter + 1
 		m.ProgramCounter = i.Operands[0].(int32)
-	case "jr":
+	case "JR":
 		m.ProgramCounter = m.IntRegisters[i.Operands[0].(int32)]
-	case "jalr":
+	case "JALR":
 		m.IntRegisters[31] = m.ProgramCounter + 1
 		m.ProgramCounter = m.IntRegisters[i.Operands[0].(int32)]
-	case "beq":
+	case "BEQ":
 		if m.IntRegisters[i.Operands[0].(int32)] == m.IntRegisters[i.Operands[1].(int32)] {
 			m.ProgramCounter += i.Operands[2].(int32) + 1
 		} else {
 			m.ProgramCounter++
 		}
-	case "c.eq.s":
-		if m.FloatRegisters[i.Operands[0].(int32)] == m.FloatRegisters[i.Operands[1].(int32)] {
-			m.ConditionRegister = true
-		} else {
-			m.ConditionRegister = false
-		}
-
-		m.ProgramCounter++
-	case "c.le.s":
-		if m.FloatRegisters[i.Operands[0].(int32)] <= m.FloatRegisters[i.Operands[1].(int32)] {
-			m.ConditionRegister = true
-		} else {
-			m.ConditionRegister = false
-		}
-
-		m.ProgramCounter++
-	case "beqs":
+	case "BEQS":
 		if m.FloatRegisters[i.Operands[0].(int32)] == m.FloatRegisters[i.Operands[1].(int32)] {
 			m.ProgramCounter += i.Operands[2].(int32) + 1
 		} else {
 			m.ProgramCounter++
 		}
-	case "bls":
+	case "BLS":
 		if m.FloatRegisters[i.Operands[0].(int32)] < m.FloatRegisters[i.Operands[1].(int32)] {
 			m.ProgramCounter += i.Operands[2].(int32) + 1
 		} else {
 			m.ProgramCounter++
 		}
-	case "bc1t":
-		if m.ConditionRegister {
-			m.ProgramCounter += 1 + i.Operands[0].(int32)
-		} else {
-			m.ProgramCounter++
-		}
-	case "lw":
+	case "LW":
 		address := i.Operands[1].(int32) + m.IntRegisters[i.Operands[2].(int32)]
 		value := m.memory[address].Value
 
@@ -131,7 +109,7 @@ func (m *Machine) Step() (bool, error) {
 			return false, errors.New("invalid data on memory")
 		}
 		m.ProgramCounter++
-	case "lwc1":
+	case "LWC1":
 		address := i.Operands[1].(int32) + m.IntRegisters[i.Operands[2].(int32)]
 		value := m.memory[address].Value
 
@@ -147,28 +125,28 @@ func (m *Machine) Step() (bool, error) {
 			return false, errors.New("invalid data on memory")
 		}
 		m.ProgramCounter++
-	case "sw":
+	case "SW":
 		m.setValueToMemory(i.Operands[1].(int32)+m.IntRegisters[i.Operands[2].(int32)], m.IntRegisters[i.Operands[0].(int32)])
 		m.ProgramCounter++
-	case "swc1":
+	case "SWC1":
 		m.setValueToMemory(i.Operands[1].(int32)+m.IntRegisters[i.Operands[2].(int32)], m.FloatRegisters[i.Operands[0].(int32)])
 		m.ProgramCounter++
-	case "add.s":
+	case "ADDS":
 		m.FloatRegisters[i.Operands[0].(int32)] = m.FloatRegisters[i.Operands[1].(int32)] + m.FloatRegisters[i.Operands[2].(int32)]
 		m.ProgramCounter++
-	case "sub.s":
+	case "SUBS":
 		m.FloatRegisters[i.Operands[0].(int32)] = m.FloatRegisters[i.Operands[1].(int32)] - m.FloatRegisters[i.Operands[2].(int32)]
 		m.ProgramCounter++
-	case "mul.s":
+	case "MULS":
 		m.FloatRegisters[i.Operands[0].(int32)] = m.FloatRegisters[i.Operands[1].(int32)] * m.FloatRegisters[i.Operands[2].(int32)]
 		m.ProgramCounter++
-	case "div.s":
+	case "DIVS":
 		m.FloatRegisters[i.Operands[0].(int32)] = m.FloatRegisters[i.Operands[1].(int32)] / m.FloatRegisters[i.Operands[2].(int32)]
 		m.ProgramCounter++
-	case "sqrt":
+	case "SQRT":
 		m.FloatRegisters[i.Operands[0].(int32)] = float32(math.Sqrt(float64(m.FloatRegisters[i.Operands[1].(int32)])))
 		m.ProgramCounter++
-	case "ftoi":
+	case "FTOI":
 		v := int32(math.Round(float64(m.FloatRegisters[i.Operands[1].(int32)])))
 
 		if v >= 0 {
@@ -178,7 +156,7 @@ func (m *Machine) Step() (bool, error) {
 		}
 
 		m.ProgramCounter++
-	case "itof":
+	case "ITOF":
 		u := math.Float32bits(m.FloatRegisters[i.Operands[1].(int32)])
 
 		if u >= (1 << 31) {
@@ -188,31 +166,12 @@ func (m *Machine) Step() (bool, error) {
 		}
 
 		m.ProgramCounter++
-	case "read_i":
-		var v int32
-		_, err := fmt.Scanf("%d", &v)
-		if err != nil {
-			return false, err
-		}
-		m.IntRegisters[i.Operands[0].(int32)] = v
-		m.ProgramCounter++
-	case "read_f":
-		var v float32
-		_, err := fmt.Scanf("%f", &v)
-		if err != nil {
-			return false, err
-		}
-		m.FloatRegisters[i.Operands[0].(int32)] = v
-		m.ProgramCounter++
-	case "out_i":
-		fmt.Print(m.IntRegisters[i.Operands[0].(int32)])
-		m.ProgramCounter++
-	case "out_c":
+	case "OUT":
 		fmt.Print(string(m.IntRegisters[i.Operands[0].(int32)]))
 		m.ProgramCounter++
-	case "nop":
+	case "NOP":
 		m.ProgramCounter++
-	case "exit":
+	case "EXIT":
 		return true, nil
 	default:
 		return false, fmt.Errorf("%v: invalid opcode", opcode)

@@ -60,81 +60,69 @@ func parseInstruction(fields []string) (Instruction, error) {
 	var operands []interface{}
 
 	switch opcode {
-	case "add":
+	case "ADD":
 		fallthrough
-	case "sub":
+	case "SUB":
 		fallthrough
-	case "slt":
+	case "SLT":
 		fallthrough
-	case "sllv":
+	case "SLLV":
 		operands = append(operands,
 			intRegister(fields[1]), intRegister(fields[2]), intRegister(fields[3]))
-	case "add.s":
+	case "ADDS":
 		fallthrough
-	case "sub.s":
+	case "SUBS":
 		fallthrough
-	case "mul.s":
+	case "MULS":
 		fallthrough
-	case "div.s":
+	case "DIVS":
 		operands = append(operands,
 			floatRegister(fields[1]), floatRegister(fields[2]), floatRegister(fields[3]))
-	case "sll":
+	case "SLL":
 		fallthrough
-	case "addi":
+	case "ADDI":
 		fallthrough
-	case "lui":
+	case "LUI":
 		fallthrough
-	case "ori":
+	case "ORI":
 		fallthrough
-	case "beq":
+	case "BEQ":
 		operands = append(operands,
 			intRegister(fields[1]), intRegister(fields[2]), immediateOrLabel(fields[3]))
-	case "beqs":
+	case "BEQS":
 		fallthrough
-	case "bls":
+	case "BLS":
 		operands = append(operands,
 			floatRegister(fields[1]), floatRegister(fields[2]), immediateOrLabel(fields[3]))
-	case "lw":
+	case "LW":
 		fallthrough
-	case "sw":
+	case "SW":
 		operands = append(operands,
 			intRegister(fields[1]), immediateOrLabel(fields[2]), intRegister(fields[3]))
-	case "lwc1":
+	case "LWC1":
 		fallthrough
-	case "swc1":
+	case "SWC1":
 		operands = append(operands,
 			floatRegister(fields[1]), immediateOrLabel(fields[2]), intRegister(fields[3]))
-	case "bc1t":
-		operands = append(operands, immediateOrLabel(fields[1]))
-	case "c.eq.s":
+	case "SQRT":
 		fallthrough
-	case "c.le.s":
+	case "FTOI":
 		fallthrough
-	case "sqrt":
-		fallthrough
-	case "ftoi":
-		fallthrough
-	case "itof":
+	case "ITOF":
 		operands = append(operands,
 			floatRegister(fields[1]), floatRegister(fields[2]))
-	case "j":
+	case "J":
 		fallthrough
-	case "jal":
+	case "JAL":
 		operands = append(operands, immediateOrLabel(fields[1]))
-	case "jr":
+	case "JR":
 		fallthrough
-	case "jalr":
+	case "JALR":
 		fallthrough
-	case "out_i":
-		fallthrough
-	case "out_c":
-		fallthrough
-	case "read_i":
+	case "OUT":
 		operands = append(operands, intRegister(fields[1]))
-	case "read_f":
-		operands = append(operands, floatRegister(fields[1]))
-	case "exit":
-	case "nop":
+	case "EXIT":
+	case "NOP":
 	default:
 		return Instruction{}, fmt.Errorf("%v: invalid opcode", opcode)
 	}
