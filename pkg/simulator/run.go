@@ -3,7 +3,9 @@ package simulator
 import (
 	"errors"
 	"fmt"
+	"github.com/kkty/simulator/pkg/float"
 	"math"
+	"os"
 )
 
 func uint32ToInt32(i uint32) int32 {
@@ -138,16 +140,24 @@ func (m *Machine) Step() (bool, error) {
 		m.setValueToMemory(i.Operands[1].(int32)+m.IntRegisters[i.Operands[2].(int32)], m.FloatRegisters[i.Operands[0].(int32)])
 		m.ProgramCounter++
 	case "ADDS":
-		m.FloatRegisters[i.Operands[0].(int32)] = m.FloatRegisters[i.Operands[1].(int32)] + m.FloatRegisters[i.Operands[2].(int32)]
+		m.FloatRegisters[i.Operands[0].(int32)] = float.Add(
+			float.NewFromFloat32(m.FloatRegisters[i.Operands[1].(int32)]),
+			float.NewFromFloat32(m.FloatRegisters[i.Operands[2].(int32)])).Float32()
 		m.ProgramCounter++
 	case "SUBS":
-		m.FloatRegisters[i.Operands[0].(int32)] = m.FloatRegisters[i.Operands[1].(int32)] - m.FloatRegisters[i.Operands[2].(int32)]
+		m.FloatRegisters[i.Operands[0].(int32)] = float.Sub(
+			float.NewFromFloat32(m.FloatRegisters[i.Operands[1].(int32)]),
+			float.NewFromFloat32(m.FloatRegisters[i.Operands[2].(int32)])).Float32()
 		m.ProgramCounter++
 	case "MULS":
-		m.FloatRegisters[i.Operands[0].(int32)] = m.FloatRegisters[i.Operands[1].(int32)] * m.FloatRegisters[i.Operands[2].(int32)]
+		m.FloatRegisters[i.Operands[0].(int32)] = float.Mul(
+			float.NewFromFloat32(m.FloatRegisters[i.Operands[1].(int32)]),
+			float.NewFromFloat32(m.FloatRegisters[i.Operands[2].(int32)])).Float32()
 		m.ProgramCounter++
 	case "DIVS":
-		m.FloatRegisters[i.Operands[0].(int32)] = m.FloatRegisters[i.Operands[1].(int32)] / m.FloatRegisters[i.Operands[2].(int32)]
+		m.FloatRegisters[i.Operands[0].(int32)] = float.Div(
+			float.NewFromFloat32(m.FloatRegisters[i.Operands[1].(int32)]),
+			float.NewFromFloat32(m.FloatRegisters[i.Operands[2].(int32)])).Float32()
 		m.ProgramCounter++
 	case "SQRT":
 		m.FloatRegisters[i.Operands[0].(int32)] = float32(math.Sqrt(float64(m.FloatRegisters[i.Operands[1].(int32)])))
@@ -173,7 +183,7 @@ func (m *Machine) Step() (bool, error) {
 
 		m.ProgramCounter++
 	case "OUT":
-		fmt.Print(string(m.IntRegisters[i.Operands[0].(int32)]))
+		os.Stdout.Write([]byte{byte(m.IntRegisters[i.Operands[0].(int32)])})
 		m.ProgramCounter++
 	case "NOP":
 		m.ProgramCounter++
