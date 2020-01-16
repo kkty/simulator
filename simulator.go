@@ -14,16 +14,15 @@ func main() {
 	native := flag.Bool("native", false, "use native float operation")
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: simulator [OPTIONS] FILENAME ENTRYPOINT\n")
+		fmt.Fprintf(os.Stderr, "Usage: simulator [OPTIONS] FILENAME\n")
 		flag.PrintDefaults()
 	}
 
 	flag.Parse()
 
 	fileName := flag.Arg(0)
-	entrypoint := flag.Arg(1)
 
-	if entrypoint == "" || fileName == "" {
+	if fileName == "" {
 		flag.Usage()
 		os.Exit(1)
 	}
@@ -37,12 +36,6 @@ func main() {
 	m := simulator.NewMachine()
 
 	if err := m.Load(string(b)); err != nil {
-		log.Fatal(err)
-	}
-
-	m.ProgramCounter, err = m.FindAddress(simulator.Label(entrypoint))
-
-	if err != nil {
 		log.Fatal(err)
 	}
 
