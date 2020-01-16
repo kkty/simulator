@@ -11,8 +11,7 @@ import (
 )
 
 func main() {
-	mappedFile := flag.String("mapped-file", "", "specifies the file to map on memory")
-	mappedAddress := flag.Int("mapped-address", 0, "specifies where to map the input on memory")
+	native := flag.Bool("native", false, "use native float operation")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: simulator [OPTIONS] FILENAME ENTRYPOINT\n")
@@ -35,18 +34,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var mappedData []byte
-	if len(*mappedFile) > 0 {
-		var err error
-		mappedData, err = ioutil.ReadFile(*mappedFile)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
 	m := simulator.NewMachine()
 
-	if err := m.Load(string(b), mappedData, int32(*mappedAddress)); err != nil {
+	if err := m.Load(string(b)); err != nil {
 		log.Fatal(err)
 	}
 
@@ -56,7 +46,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	executed, err := m.Run()
+	executed, err := m.Run(*native)
 
 	if err != nil {
 		log.Fatal(err)

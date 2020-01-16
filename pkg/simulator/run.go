@@ -26,7 +26,7 @@ func int32ToUint32(i int32) uint32 {
 
 // Step fetches an instruction and executes it.
 // Returns true if it has encountered "exit" call.
-func (m *Machine) Step() (bool, error) {
+func (m *Machine) Step(native bool) (bool, error) {
 	i, ok := m.memory[m.ProgramCounter].Value.(Instruction)
 
 	if !ok {
@@ -140,24 +140,40 @@ func (m *Machine) Step() (bool, error) {
 		m.setValueToMemory(i.Operands[1].(int32)+m.IntRegisters[i.Operands[2].(int32)], m.FloatRegisters[i.Operands[0].(int32)])
 		m.ProgramCounter++
 	case "ADDS":
-		m.FloatRegisters[i.Operands[0].(int32)] = float.Add(
-			float.NewFromFloat32(m.FloatRegisters[i.Operands[1].(int32)]),
-			float.NewFromFloat32(m.FloatRegisters[i.Operands[2].(int32)])).Float32()
+		if native {
+			m.FloatRegisters[i.Operands[0].(int32)] = m.FloatRegisters[i.Operands[1].(int32)] + m.FloatRegisters[i.Operands[2].(int32)]
+		} else {
+			m.FloatRegisters[i.Operands[0].(int32)] = float.Add(
+				float.NewFromFloat32(m.FloatRegisters[i.Operands[1].(int32)]),
+				float.NewFromFloat32(m.FloatRegisters[i.Operands[2].(int32)])).Float32()
+		}
 		m.ProgramCounter++
 	case "SUBS":
-		m.FloatRegisters[i.Operands[0].(int32)] = float.Sub(
-			float.NewFromFloat32(m.FloatRegisters[i.Operands[1].(int32)]),
-			float.NewFromFloat32(m.FloatRegisters[i.Operands[2].(int32)])).Float32()
+		if native {
+			m.FloatRegisters[i.Operands[0].(int32)] = m.FloatRegisters[i.Operands[1].(int32)] - m.FloatRegisters[i.Operands[2].(int32)]
+		} else {
+			m.FloatRegisters[i.Operands[0].(int32)] = float.Sub(
+				float.NewFromFloat32(m.FloatRegisters[i.Operands[1].(int32)]),
+				float.NewFromFloat32(m.FloatRegisters[i.Operands[2].(int32)])).Float32()
+		}
 		m.ProgramCounter++
 	case "MULS":
-		m.FloatRegisters[i.Operands[0].(int32)] = float.Mul(
-			float.NewFromFloat32(m.FloatRegisters[i.Operands[1].(int32)]),
-			float.NewFromFloat32(m.FloatRegisters[i.Operands[2].(int32)])).Float32()
+		if native {
+			m.FloatRegisters[i.Operands[0].(int32)] = m.FloatRegisters[i.Operands[1].(int32)] * m.FloatRegisters[i.Operands[2].(int32)]
+		} else {
+			m.FloatRegisters[i.Operands[0].(int32)] = float.Mul(
+				float.NewFromFloat32(m.FloatRegisters[i.Operands[1].(int32)]),
+				float.NewFromFloat32(m.FloatRegisters[i.Operands[2].(int32)])).Float32()
+		}
 		m.ProgramCounter++
 	case "DIVS":
-		m.FloatRegisters[i.Operands[0].(int32)] = float.Div(
-			float.NewFromFloat32(m.FloatRegisters[i.Operands[1].(int32)]),
-			float.NewFromFloat32(m.FloatRegisters[i.Operands[2].(int32)])).Float32()
+		if native {
+			m.FloatRegisters[i.Operands[0].(int32)] = m.FloatRegisters[i.Operands[1].(int32)] / m.FloatRegisters[i.Operands[2].(int32)]
+		} else {
+			m.FloatRegisters[i.Operands[0].(int32)] = float.Div(
+				float.NewFromFloat32(m.FloatRegisters[i.Operands[1].(int32)]),
+				float.NewFromFloat32(m.FloatRegisters[i.Operands[2].(int32)])).Float32()
+		}
 		m.ProgramCounter++
 	case "SQRT":
 		m.FloatRegisters[i.Operands[0].(int32)] = float32(math.Sqrt(float64(m.FloatRegisters[i.Operands[1].(int32)])))
@@ -187,6 +203,16 @@ func (m *Machine) Step() (bool, error) {
 		m.ProgramCounter++
 	case "NOP":
 		m.ProgramCounter++
+	case "IN":
+		var value int32
+		fmt.Scan(&value)
+		m.IntRegisters[i.Operands[0].(int32)] = value
+		m.ProgramCounter++
+	case "INF":
+		var value float32
+		fmt.Scan(&value)
+		m.FloatRegisters[i.Operands[0].(int32)] = value
+		m.ProgramCounter++
 	case "EXIT":
 		return true, nil
 	default:
@@ -196,11 +222,11 @@ func (m *Machine) Step() (bool, error) {
 	return false, nil
 }
 
-func (m *Machine) Run() (int, error) {
+func (m *Machine) Run(native bool) (int, error) {
 	executed := 0
 
 	for {
-		done, err := m.Step()
+		done, err := m.Step(native)
 
 		if err != nil {
 			return executed, err

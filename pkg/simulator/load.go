@@ -123,7 +123,11 @@ func parseInstruction(fields []string) (Instruction, error) {
 	case "JALR":
 		fallthrough
 	case "OUT":
+		fallthrough
+	case "IN":
 		operands = append(operands, intRegister(fields[1]))
+	case "INF":
+		operands = append(operands, floatRegister(fields[1]))
 	case "EXIT":
 	case "NOP":
 	default:
@@ -159,7 +163,7 @@ func parseData(fields []string) (ValueWithLabel, error) {
 }
 
 // Load loads a program onto the memory.
-func (m *Machine) Load(program string, mappedData []byte, mappedAddress int32) error {
+func (m *Machine) Load(program string) error {
 	// The default section is "text".
 	section := "text"
 
@@ -232,15 +236,6 @@ func (m *Machine) Load(program string, mappedData []byte, mappedAddress int32) e
 				}
 			}
 		}
-	}
-
-	for i, c := range mappedData {
-		i := int32(i)
-		if i%4 == 0 {
-			m.memory[mappedAddress+(i/4)*4].Value = int32(0)
-		}
-
-		m.memory[mappedAddress+(i/4)*4].Value = uint32ToInt32(int32ToUint32(m.memory[mappedAddress+(i/4)*4].Value.(int32)) + uint32(c)<<(24-(i%4)*8))
 	}
 
 	return nil
