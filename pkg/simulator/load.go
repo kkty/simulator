@@ -164,9 +164,6 @@ func parseData(fields []string) (ValueWithLabel, error) {
 
 // Load loads a program onto the memory.
 func (m *Machine) Load(program string) error {
-	// The default section is "text".
-	section := "text"
-
 	var nextLabel Label
 	var nextAddress int32
 
@@ -186,41 +183,21 @@ func (m *Machine) Load(program string) error {
 			return fmt.Errorf("parse %v: %w", fields, err)
 		}
 
-		// Changes section.
-		if strings.HasPrefix(fields[0], ".") {
-			section = strings.TrimPrefix(fields[0], ".")
+		if strings.HasSuffix(fields[0], ":") {
+			nextLabel = Label(strings.TrimSuffix(fields[0], ":"))
 			continue
 		}
 
-		switch section {
-		case "data":
-			var err error
+		instruction, err := parseInstruction(fields)
 
-			m.memory[nextAddress], err = parseData(fields)
-			nextAddress++
-
-			if err != nil {
-				return wrapError(err)
-			}
-		case "text":
-			if strings.HasSuffix(fields[0], ":") {
-				nextLabel = Label(strings.TrimSuffix(fields[0], ":"))
-				continue
-			}
-
-			instruction, err := parseInstruction(fields)
-
-			if err != nil {
-				return wrapError(err)
-			}
-
-			m.memory[nextAddress] = ValueWithLabel{nextLabel, instruction}
-			nextAddress++
-
-			nextLabel = ""
-		default:
-			return wrapError(fmt.Errorf("%v: invalid section", section))
+		if err != nil {
+			return wrapError(err)
 		}
+
+		m.memory[nextAddress] = ValueWithLabel{nextLabel, instruction}
+		nextAddress++
+
+		nextLabel = ""
 	}
 
 	// Iterates thorough the memory and replaces labels with address values.
