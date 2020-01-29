@@ -10,22 +10,24 @@ import (
 
 var (
 	intRegisters = map[string]int32{
-		"$zero": 0, "$tmp0": 1, "$tmp1": 2, "$tmp2": 3,
-		"$hp": 29, "$sp": 30, "$ra": 31,
+		"$izero": 0, "$itmp1": 1, "$itmp2": 2,
+		"$iarg1": 3, "$iarg2": 4, "$iarg3": 5,
+		"$iret": 6, "$hp": 29, "$sp": 30, "$ra": 31,
 	}
 
 	floatRegisters = map[string]int32{
-		"$fzero": 0, "$ftmp": 1,
+		"$fzero": 0, "$ftmp1": 1, "$farg1": 2, "$farg2": 3,
+		"$fret": 4,
 	}
 )
 
 func init() {
-	for i := int32(0); i < 25; i++ {
-		intRegisters[fmt.Sprintf("$i%d", i)] = i + 4
+	for i := int32(0); i < 22; i++ {
+		intRegisters[fmt.Sprintf("$i%d", i+1)] = i + 7
 	}
 
-	for i := int32(0); i < 30; i++ {
-		floatRegisters[fmt.Sprintf("$f%d", i)] = i + 2
+	for i := int32(0); i < 27; i++ {
+		floatRegisters[fmt.Sprintf("$f%d", i+1)] = i + 5
 	}
 }
 
