@@ -87,6 +87,12 @@ func (m *Machine) Step(native bool) (bool, error) {
 		} else {
 			m.ProgramCounter++
 		}
+	case "BL":
+		if m.IntRegisters[i.Operands[0].(int32)] < m.IntRegisters[i.Operands[1].(int32)] {
+			m.ProgramCounter += i.Operands[2].(int32) + 1
+		} else {
+			m.ProgramCounter++
+		}
 	case "BLS":
 		if m.FloatRegisters[i.Operands[0].(int32)] < m.FloatRegisters[i.Operands[1].(int32)] {
 			m.ProgramCounter += i.Operands[2].(int32) + 1

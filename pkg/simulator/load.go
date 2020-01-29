@@ -88,6 +88,8 @@ func parseInstruction(fields []string) (Instruction, error) {
 		fallthrough
 	case "ORI":
 		fallthrough
+	case "BL":
+		fallthrough
 	case "BEQ":
 		operands = append(operands,
 			intRegister(fields[1]), intRegister(fields[2]), immediateOrLabel(fields[3]))
