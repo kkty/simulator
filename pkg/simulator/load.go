@@ -1,7 +1,6 @@
 package simulator
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -116,29 +115,6 @@ func parseInstruction(fields []string) (Instruction, error) {
 		Opcode:   opcode,
 		Operands: operands,
 	}, nil
-}
-
-// TODO: remove this
-func parseData(fields []string) (ValueWithLabel, error) {
-	if len(fields) != 3 {
-		return ValueWithLabel{}, errors.New("invalid syntax")
-	}
-
-	switch t := fields[1]; t {
-	case ".float":
-		f, err := strconv.ParseFloat(fields[2], 32)
-
-		if err != nil {
-			return ValueWithLabel{}, err
-		}
-
-		return ValueWithLabel{
-			Label(strings.TrimSuffix(fields[0], ":")),
-			float32(f),
-		}, nil
-	default:
-		return ValueWithLabel{}, errors.New("invalid data type")
-	}
 }
 
 // Load loads a program onto the memory.
