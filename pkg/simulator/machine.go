@@ -22,21 +22,17 @@ type Instruction struct {
 
 // Machine is an abstraction of physical machines.
 type Machine struct {
-	IntRegisters      []int32
-	FloatRegisters    []float32
+	Registers         []uint32
 	memory            []ValueWithLabel
 	ProgramCounter    int32
 	ConditionRegister bool
-	findAddressCache  map[Label]int32
 }
 
 // NewMachine creates a Machine instance with empty registers/memory.
 func NewMachine() Machine {
 	return Machine{
-		IntRegisters:     make([]int32, 32),
-		FloatRegisters:   make([]float32, 32),
-		memory:           make([]ValueWithLabel, 100000000),
-		findAddressCache: make(map[Label]int32),
+		Registers: make([]uint32, 64),
+		memory:    make([]ValueWithLabel, 100000000),
 	}
 }
 
@@ -59,20 +55,10 @@ func (m *Machine) Memory() []MemoryEntry {
 	return memory
 }
 
-// setValueToMemory sets a value to the memory without modifying label values.
-func (m *Machine) setValueToMemory(address int32, value interface{}) {
-	m.memory[address] = ValueWithLabel{m.memory[address].Label, value}
-}
-
 // FindAddress iterates through the memory and returns the label's matching address.
 func (m *Machine) FindAddress(label Label) (int32, error) {
-	if address, ok := m.findAddressCache[label]; ok {
-		return address, nil
-	}
-
 	for i, d := range m.memory {
 		if d.Label == label {
-			m.findAddressCache[label] = int32(i)
 			return int32(i), nil
 		}
 	}

@@ -3,48 +3,28 @@ package simulator
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 )
 
 var (
-	intRegisters = map[string]int32{
-		"$izero": 0, "$itmp1": 1, "$itmp2": 2,
-		"$iarg1": 3, "$iarg2": 4, "$iarg3": 5,
-		"$iret": 6, "$hp": 29, "$sp": 30, "$ra": 31,
-	}
-
-	floatRegisters = map[string]int32{
-		"$fzero": 0, "$ftmp1": 1, "$farg1": 2, "$farg2": 3,
-		"$fret": 4,
+	registers = map[string]int32{
+		"$zero": 60, "$hp": 61, "$sp": 62, "$ra": 63,
 	}
 )
 
 func init() {
-	for i := int32(0); i < 22; i++ {
-		intRegisters[fmt.Sprintf("$i%d", i+1)] = i + 7
-	}
-
-	for i := int32(0); i < 27; i++ {
-		floatRegisters[fmt.Sprintf("$f%d", i+1)] = i + 5
+	for i := int32(0); i < 60; i++ {
+		registers[fmt.Sprintf("$r%d", i)] = i
 	}
 }
 
-func intRegister(s string) int32 {
-	if _, exists := intRegisters[s]; !exists {
-		log.Fatalf("unknown register: %s", s)
+func register(s string) int32 {
+	if i, exists := registers[s]; exists {
+		return i
 	}
 
-	return intRegisters[s]
-}
-
-func floatRegister(s string) int32 {
-	if _, exists := floatRegisters[s]; !exists {
-		log.Fatalf("unknown register: %s", s)
-	}
-
-	return floatRegisters[s]
+	panic(fmt.Sprintf("unknown register: %s", s))
 }
 
 func parseInstruction(fields []string) (Instruction, error) {
@@ -68,9 +48,14 @@ func parseInstruction(fields []string) (Instruction, error) {
 		fallthrough
 	case "SLT":
 		fallthrough
+	case "SLTS":
+		fallthrough
+	case "SEQ":
+		fallthrough
 	case "SLLV":
-		operands = append(operands,
-			intRegister(fields[1]), intRegister(fields[2]), intRegister(fields[3]))
+		fallthrough
+	case "SRLV":
+		fallthrough
 	case "ADDS":
 		fallthrough
 	case "SUBS":
@@ -79,8 +64,10 @@ func parseInstruction(fields []string) (Instruction, error) {
 		fallthrough
 	case "DIVS":
 		operands = append(operands,
-			floatRegister(fields[1]), floatRegister(fields[2]), floatRegister(fields[3]))
+			register(fields[1]), register(fields[2]), register(fields[3]))
 	case "SLL":
+		fallthrough
+	case "SRL":
 		fallthrough
 	case "ADDI":
 		fallthrough
@@ -88,50 +75,37 @@ func parseInstruction(fields []string) (Instruction, error) {
 		fallthrough
 	case "ORI":
 		fallthrough
-	case "BL":
+	case "BLT":
+		fallthrough
+	case "BLTS":
 		fallthrough
 	case "BEQ":
 		operands = append(operands,
-			intRegister(fields[1]), intRegister(fields[2]), immediateOrLabel(fields[3]))
-	case "BEQS":
-		fallthrough
-	case "BLS":
-		operands = append(operands,
-			floatRegister(fields[1]), floatRegister(fields[2]), immediateOrLabel(fields[3]))
-	case "BZS":
-		operands = append(operands,
-			floatRegister(fields[1]), immediateOrLabel(fields[2]))
+			register(fields[1]), register(fields[2]), immediateOrLabel(fields[3]))
 	case "LW":
 		fallthrough
 	case "SW":
 		operands = append(operands,
-			intRegister(fields[1]), immediateOrLabel(fields[2]), intRegister(fields[3]))
-	case "LWC1":
-		fallthrough
-	case "SWC1":
-		operands = append(operands,
-			floatRegister(fields[1]), immediateOrLabel(fields[2]), intRegister(fields[3]))
+			register(fields[1]), immediateOrLabel(fields[2]), register(fields[3]))
 	case "SQRT":
 		fallthrough
 	case "FTOI":
 		fallthrough
 	case "ITOF":
 		operands = append(operands,
-			floatRegister(fields[1]), floatRegister(fields[2]))
+			register(fields[1]), register(fields[2]))
 	case "J":
 		fallthrough
 	case "JAL":
 		operands = append(operands, immediateOrLabel(fields[1]))
 	case "JR":
 		fallthrough
-	case "JALR":
-		fallthrough
 	case "OUT":
 		fallthrough
 	case "IN":
-		operands = append(operands, intRegister(fields[1]))
+		operands = append(operands, register(fields[1]))
 	case "INF":
-		operands = append(operands, floatRegister(fields[1]))
+		operands = append(operands, register(fields[1]))
 	case "EXIT":
 	case "NOP":
 	default:
@@ -144,6 +118,7 @@ func parseInstruction(fields []string) (Instruction, error) {
 	}, nil
 }
 
+// TODO: remove this
 func parseData(fields []string) (ValueWithLabel, error) {
 	if len(fields) != 3 {
 		return ValueWithLabel{}, errors.New("invalid syntax")

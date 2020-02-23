@@ -3,7 +3,6 @@ package simulator
 import (
 	"errors"
 	"fmt"
-	"github.com/kkty/simulator/pkg/float"
 	"math"
 	"os"
 )
@@ -24,6 +23,14 @@ func int32ToUint32(i int32) uint32 {
 	}
 }
 
+func uint32ToFloat32(i uint32) float32 {
+	return math.Float32frombits(i)
+}
+
+func float32ToUint32(f float32) uint32 {
+	return math.Float32bits(f)
+}
+
 // Step fetches an instruction and executes it.
 // Returns true if it has encountered "exit" call.
 func (m *Machine) Step(native bool) (bool, error) {
@@ -35,189 +42,127 @@ func (m *Machine) Step(native bool) (bool, error) {
 
 	switch opcode := i.Opcode; opcode {
 	case "ADD":
-		m.IntRegisters[i.Operands[0].(int32)] = m.IntRegisters[i.Operands[1].(int32)] + m.IntRegisters[i.Operands[2].(int32)]
+		m.Registers[i.Operands[0].(int32)] = int32ToUint32(
+			uint32ToInt32(m.Registers[i.Operands[1].(int32)]) + uint32ToInt32(m.Registers[i.Operands[2].(int32)]))
 		m.ProgramCounter++
 	case "SUB":
-		m.IntRegisters[i.Operands[0].(int32)] = m.IntRegisters[i.Operands[1].(int32)] - m.IntRegisters[i.Operands[2].(int32)]
+		m.Registers[i.Operands[0].(int32)] = int32ToUint32(
+			uint32ToInt32(m.Registers[i.Operands[1].(int32)]) - uint32ToInt32(m.Registers[i.Operands[2].(int32)]))
 		m.ProgramCounter++
-	case "ADDI":
-		m.IntRegisters[i.Operands[0].(int32)] = m.IntRegisters[i.Operands[1].(int32)] + i.Operands[2].(int32)
-		m.ProgramCounter++
-	case "SUBI":
-		m.IntRegisters[i.Operands[0].(int32)] = m.IntRegisters[i.Operands[1].(int32)] - i.Operands[2].(int32)
-		m.ProgramCounter++
-	case "LUI":
-		m.IntRegisters[i.Operands[0].(int32)] = uint32ToInt32(int32ToUint32(i.Operands[2].(int32))<<16 | int32ToUint32(m.IntRegisters[i.Operands[1].(int32)]))
-		m.ProgramCounter++
-	case "ORI":
-		m.IntRegisters[i.Operands[0].(int32)] = m.IntRegisters[i.Operands[1].(int32)] | i.Operands[2].(int32)
+	case "SEQ":
+		if m.Registers[i.Operands[1].(int32)] == m.Registers[i.Operands[2].(int32)] {
+			m.Registers[i.Operands[0].(int32)] = 1
+		} else {
+			m.Registers[i.Operands[0].(int32)] = 0
+		}
 		m.ProgramCounter++
 	case "SLT":
-		if m.IntRegisters[i.Operands[1].(int32)] < m.IntRegisters[i.Operands[2].(int32)] {
-			m.IntRegisters[i.Operands[0].(int32)] = 1
+		if uint32ToInt32(m.Registers[i.Operands[1].(int32)]) < uint32ToInt32(m.Registers[i.Operands[2].(int32)]) {
+			m.Registers[i.Operands[0].(int32)] = 1
 		} else {
-			m.IntRegisters[i.Operands[0].(int32)] = 0
+			m.Registers[i.Operands[0].(int32)] = 0
+		}
+		m.ProgramCounter++
+	case "SLTS":
+		if uint32ToFloat32(m.Registers[i.Operands[1].(int32)]) < uint32ToFloat32(m.Registers[i.Operands[2].(int32)]) {
+			m.Registers[i.Operands[0].(int32)] = 1
+		} else {
+			m.Registers[i.Operands[0].(int32)] = 0
 		}
 		m.ProgramCounter++
 	case "SLL":
-		m.IntRegisters[i.Operands[0].(int32)] = m.IntRegisters[i.Operands[1].(int32)] << i.Operands[2].(int32)
+		m.Registers[i.Operands[0].(int32)] = m.Registers[i.Operands[1].(int32)] << i.Operands[2].(int32)
+		m.ProgramCounter++
+	case "SRL":
+		m.Registers[i.Operands[0].(int32)] = m.Registers[i.Operands[1].(int32)] >> i.Operands[2].(int32)
 		m.ProgramCounter++
 	case "SLLV":
-		m.IntRegisters[i.Operands[0].(int32)] = m.IntRegisters[i.Operands[1].(int32)] << m.IntRegisters[i.Operands[2].(int32)]
+		m.Registers[i.Operands[0].(int32)] = m.Registers[i.Operands[1].(int32)] << m.Registers[i.Operands[2].(int32)]
 		m.ProgramCounter++
+	case "SRLV":
+		m.Registers[i.Operands[0].(int32)] = m.Registers[i.Operands[1].(int32)] >> m.Registers[i.Operands[2].(int32)]
+		m.ProgramCounter++
+	case "ADDS":
+		m.Registers[i.Operands[0].(int32)] = float32ToUint32(
+			uint32ToFloat32(m.Registers[i.Operands[1].(int32)]) + uint32ToFloat32(m.Registers[i.Operands[2].(int32)]))
+		m.ProgramCounter++
+	case "SUBS":
+		m.Registers[i.Operands[0].(int32)] = float32ToUint32(
+			uint32ToFloat32(m.Registers[i.Operands[1].(int32)]) - uint32ToFloat32(m.Registers[i.Operands[2].(int32)]))
+		m.ProgramCounter++
+	case "MULS":
+		m.Registers[i.Operands[0].(int32)] = float32ToUint32(
+			uint32ToFloat32(m.Registers[i.Operands[1].(int32)]) * uint32ToFloat32(m.Registers[i.Operands[2].(int32)]))
+		m.ProgramCounter++
+	case "DIVS":
+		m.Registers[i.Operands[0].(int32)] = float32ToUint32(
+			uint32ToFloat32(m.Registers[i.Operands[1].(int32)]) / uint32ToFloat32(m.Registers[i.Operands[2].(int32)]))
+		m.ProgramCounter++
+	case "SQRT":
+		m.Registers[i.Operands[0].(int32)] = float32ToUint32(
+			float32(math.Sqrt(float64(uint32ToFloat32(m.Registers[i.Operands[1].(int32)])))))
+		m.ProgramCounter++
+	case "FTOI":
+		m.Registers[i.Operands[0].(int32)] = int32ToUint32(int32(math.Round(float64(uint32ToFloat32(m.Registers[i.Operands[1].(int32)])))))
+		m.ProgramCounter++
+	case "ITOF":
+		m.Registers[i.Operands[0].(int32)] = float32ToUint32(float32(uint32ToInt32(m.Registers[i.Operands[1].(int32)])))
+		m.ProgramCounter++
+	case "ADDI":
+		m.Registers[i.Operands[0].(int32)] = int32ToUint32(
+			uint32ToInt32(m.Registers[i.Operands[1].(int32)]) + i.Operands[2].(int32))
+		m.ProgramCounter++
+	case "LUI":
+		m.Registers[i.Operands[0].(int32)] = int32ToUint32(i.Operands[2].(int32))<<16 | m.Registers[i.Operands[1].(int32)]
+		m.ProgramCounter++
+	case "ORI":
+		m.Registers[i.Operands[0].(int32)] = m.Registers[i.Operands[1].(int32)] | int32ToUint32(i.Operands[2].(int32))
+		m.ProgramCounter++
+	case "BEQ":
+		if m.Registers[i.Operands[0].(int32)] == m.Registers[i.Operands[1].(int32)] {
+			m.ProgramCounter += i.Operands[2].(int32) + 1
+		} else {
+			m.ProgramCounter++
+		}
+	case "BLT":
+		if uint32ToInt32(m.Registers[i.Operands[0].(int32)]) < uint32ToInt32(m.Registers[i.Operands[1].(int32)]) {
+			m.ProgramCounter += i.Operands[2].(int32) + 1
+		} else {
+			m.ProgramCounter++
+		}
+	case "BLTS":
+		if uint32ToFloat32(m.Registers[i.Operands[0].(int32)]) < uint32ToFloat32(m.Registers[i.Operands[1].(int32)]) {
+			m.ProgramCounter += i.Operands[2].(int32) + 1
+		} else {
+			m.ProgramCounter++
+		}
 	case "J":
 		m.ProgramCounter = i.Operands[0].(int32)
 	case "JAL":
-		m.IntRegisters[31] = m.ProgramCounter + 1
+		m.Registers[registers["$ra"]] = int32ToUint32(m.ProgramCounter + 1)
 		m.ProgramCounter = i.Operands[0].(int32)
 	case "JR":
-		m.ProgramCounter = m.IntRegisters[i.Operands[0].(int32)]
-	case "JALR":
-		m.IntRegisters[31] = m.ProgramCounter + 1
-		m.ProgramCounter = m.IntRegisters[i.Operands[0].(int32)]
-	case "BEQ":
-		if m.IntRegisters[i.Operands[0].(int32)] == m.IntRegisters[i.Operands[1].(int32)] {
-			m.ProgramCounter += i.Operands[2].(int32) + 1
-		} else {
-			m.ProgramCounter++
-		}
-	case "BEQS":
-		if m.FloatRegisters[i.Operands[0].(int32)] == m.FloatRegisters[i.Operands[1].(int32)] {
-			m.ProgramCounter += i.Operands[2].(int32) + 1
-		} else {
-			m.ProgramCounter++
-		}
-	case "BL":
-		if m.IntRegisters[i.Operands[0].(int32)] < m.IntRegisters[i.Operands[1].(int32)] {
-			m.ProgramCounter += i.Operands[2].(int32) + 1
-		} else {
-			m.ProgramCounter++
-		}
-	case "BLS":
-		if m.FloatRegisters[i.Operands[0].(int32)] < m.FloatRegisters[i.Operands[1].(int32)] {
-			m.ProgramCounter += i.Operands[2].(int32) + 1
-		} else {
-			m.ProgramCounter++
-		}
-	case "BZS":
-		if m.FloatRegisters[i.Operands[0].(int32)] == 0 {
-			m.ProgramCounter += i.Operands[1].(int32) + 1
-		} else {
-			m.ProgramCounter++
-		}
+		m.ProgramCounter = uint32ToInt32(m.Registers[i.Operands[0].(int32)])
 	case "LW":
-		address := i.Operands[1].(int32) + m.IntRegisters[i.Operands[2].(int32)]
-		value := m.memory[address].Value
-
-		if v, ok := value.(int32); ok {
-			m.IntRegisters[i.Operands[0].(int32)] = v
-		} else if v, ok := value.(float32); ok {
-			u := math.Float32bits(v)
-
-			if u >= (1 << 31) {
-				m.IntRegisters[i.Operands[0].(int32)] = -int32((^u) + 1)
-			} else {
-				m.IntRegisters[i.Operands[0].(int32)] = int32(u)
-			}
-		} else {
-			return false, errors.New("invalid data on memory")
-		}
-		m.ProgramCounter++
-	case "LWC1":
-		address := i.Operands[1].(int32) + m.IntRegisters[i.Operands[2].(int32)]
-		value := m.memory[address].Value
-
-		if v, ok := value.(float32); ok {
-			m.FloatRegisters[i.Operands[0].(int32)] = v
-		} else if v, ok := value.(int32); ok {
-			if v >= 0 {
-				m.FloatRegisters[i.Operands[0].(int32)] = math.Float32frombits(uint32(v))
-			} else {
-				m.FloatRegisters[i.Operands[0].(int32)] = math.Float32frombits((^uint32(-v)) + 1)
-			}
-		} else {
-			return false, errors.New("invalid data on memory")
-		}
+		m.Registers[i.Operands[0].(int32)] = m.memory[uint32(i.Operands[1].(int32))+m.Registers[i.Operands[2].(int32)]].Value.(uint32)
 		m.ProgramCounter++
 	case "SW":
-		m.setValueToMemory(i.Operands[1].(int32)+m.IntRegisters[i.Operands[2].(int32)], m.IntRegisters[i.Operands[0].(int32)])
-		m.ProgramCounter++
-	case "SWC1":
-		m.setValueToMemory(i.Operands[1].(int32)+m.IntRegisters[i.Operands[2].(int32)], m.FloatRegisters[i.Operands[0].(int32)])
-		m.ProgramCounter++
-	case "ADDS":
-		if native {
-			m.FloatRegisters[i.Operands[0].(int32)] = m.FloatRegisters[i.Operands[1].(int32)] + m.FloatRegisters[i.Operands[2].(int32)]
-		} else {
-			m.FloatRegisters[i.Operands[0].(int32)] = float.Add(
-				float.NewFromFloat32(m.FloatRegisters[i.Operands[1].(int32)]),
-				float.NewFromFloat32(m.FloatRegisters[i.Operands[2].(int32)])).Float32()
-		}
-		m.ProgramCounter++
-	case "SUBS":
-		if native {
-			m.FloatRegisters[i.Operands[0].(int32)] = m.FloatRegisters[i.Operands[1].(int32)] - m.FloatRegisters[i.Operands[2].(int32)]
-		} else {
-			m.FloatRegisters[i.Operands[0].(int32)] = float.Sub(
-				float.NewFromFloat32(m.FloatRegisters[i.Operands[1].(int32)]),
-				float.NewFromFloat32(m.FloatRegisters[i.Operands[2].(int32)])).Float32()
-		}
-		m.ProgramCounter++
-	case "MULS":
-		if native {
-			m.FloatRegisters[i.Operands[0].(int32)] = m.FloatRegisters[i.Operands[1].(int32)] * m.FloatRegisters[i.Operands[2].(int32)]
-		} else {
-			m.FloatRegisters[i.Operands[0].(int32)] = float.Mul(
-				float.NewFromFloat32(m.FloatRegisters[i.Operands[1].(int32)]),
-				float.NewFromFloat32(m.FloatRegisters[i.Operands[2].(int32)])).Float32()
-		}
-		m.ProgramCounter++
-	case "DIVS":
-		if native {
-			m.FloatRegisters[i.Operands[0].(int32)] = m.FloatRegisters[i.Operands[1].(int32)] / m.FloatRegisters[i.Operands[2].(int32)]
-		} else {
-			m.FloatRegisters[i.Operands[0].(int32)] = float.Div(
-				float.NewFromFloat32(m.FloatRegisters[i.Operands[1].(int32)]),
-				float.NewFromFloat32(m.FloatRegisters[i.Operands[2].(int32)])).Float32()
-		}
-		m.ProgramCounter++
-	case "SQRT":
-		m.FloatRegisters[i.Operands[0].(int32)] = float32(math.Sqrt(float64(m.FloatRegisters[i.Operands[1].(int32)])))
-		m.ProgramCounter++
-	case "FTOI":
-		v := int32(math.Round(float64(m.FloatRegisters[i.Operands[1].(int32)])))
-
-		if v >= 0 {
-			m.FloatRegisters[i.Operands[0].(int32)] = math.Float32frombits(uint32(v))
-		} else {
-			m.FloatRegisters[i.Operands[0].(int32)] = math.Float32frombits((^uint32(-v)) + 1)
-		}
-
-		m.ProgramCounter++
-	case "ITOF":
-		u := math.Float32bits(m.FloatRegisters[i.Operands[1].(int32)])
-
-		if u >= (1 << 31) {
-			m.FloatRegisters[i.Operands[0].(int32)] = float32(-int32((^u) + 1))
-		} else {
-			m.FloatRegisters[i.Operands[0].(int32)] = float32(int32(u))
-		}
-
+		m.memory[uint32(i.Operands[1].(int32))+m.Registers[i.Operands[2].(int32)]].Value = m.Registers[i.Operands[0].(int32)]
 		m.ProgramCounter++
 	case "OUT":
-		os.Stdout.Write([]byte{byte(m.IntRegisters[i.Operands[0].(int32)])})
+		os.Stdout.Write([]byte{byte(m.Registers[i.Operands[0].(int32)])})
 		m.ProgramCounter++
 	case "NOP":
 		m.ProgramCounter++
 	case "IN":
 		var value int32
 		fmt.Scan(&value)
-		m.IntRegisters[i.Operands[0].(int32)] = value
+		m.Registers[i.Operands[0].(int32)] = int32ToUint32(value)
 		m.ProgramCounter++
 	case "INF":
 		var value float32
 		fmt.Scan(&value)
-		m.FloatRegisters[i.Operands[0].(int32)] = value
+		m.Registers[i.Operands[0].(int32)] = float32ToUint32(value)
 		m.ProgramCounter++
 	case "EXIT":
 		return true, nil
