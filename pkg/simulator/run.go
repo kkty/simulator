@@ -144,10 +144,12 @@ func (m *Machine) Step(native bool) (bool, error) {
 	case "JR":
 		m.ProgramCounter = uint32ToInt32(m.Registers[i.Operands[0].(int32)])
 	case "LW":
-		m.Registers[i.Operands[0].(int32)] = m.memory[uint32(i.Operands[1].(int32))+m.Registers[i.Operands[2].(int32)]].Value.(uint32)
+		address := uint32(i.Operands[1].(int32)) + m.Registers[i.Operands[2].(int32)] + m.Registers[i.Operands[3].(int32)]
+		m.Registers[i.Operands[0].(int32)] = m.memory[address].Value.(uint32)
 		m.ProgramCounter++
 	case "SW":
-		m.memory[uint32(i.Operands[1].(int32))+m.Registers[i.Operands[2].(int32)]].Value = m.Registers[i.Operands[0].(int32)]
+		address := uint32(i.Operands[1].(int32)) + m.Registers[i.Operands[2].(int32)] + m.Registers[i.Operands[3].(int32)]
+		m.memory[address].Value = m.Registers[i.Operands[0].(int32)]
 		m.ProgramCounter++
 	case "OUT":
 		os.Stdout.Write([]byte{byte(m.Registers[i.Operands[0].(int32)])})

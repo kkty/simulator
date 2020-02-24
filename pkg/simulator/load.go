@@ -85,7 +85,7 @@ func parseInstruction(fields []string) (Instruction, error) {
 		fallthrough
 	case "SW":
 		operands = append(operands,
-			register(fields[1]), immediateOrLabel(fields[2]), register(fields[3]))
+			register(fields[1]), immediateOrLabel(fields[2]), register(fields[3]), register(fields[4]))
 	case "SQRT":
 		fallthrough
 	case "FTOI":
